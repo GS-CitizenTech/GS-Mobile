@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import AppScreen from '../components/AppScreen';
 import colors from '../theme/colors';
 import { listarAlertas, obterAlertaPorId } from '../services/alertaService';
 import { listarPontosMonitoramento, obterPontoMonitoramentoPorId } from '../services/pontoMonitoramentoService';
+import { listarLeiturasEnchente, obterLeituraEnchentePorId } from '../services/leituraEnchenteService';
 import { getApiErrorMessage } from '../services/apiError';
 
 function InfoCard({ title, value, description, color }) {
@@ -622,25 +623,457 @@ export function PointDetailsScreen({ route }) {
   );
 }
 
-export function ReadingsScreen() {
-  const readings = [
-    { id: 1, level: '1,20 m', rain: '15 mm', date: 'Leitura demonstrativa 1' },
-    { id: 2, level: '0,85 m', rain: '10 mm', date: 'Leitura demonstrativa 2' },
-    { id: 3, level: '1,50 m', rain: '25 mm', date: 'Leitura demonstrativa 3' },
-  ];
+function formatarMedida(value, unit) {
+  if (value === null || value === undefined || value === '') return `Não informado ${unit}`;
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return `Não informado ${unit}`;
+  return `${numericValue.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })} ${unit}`;
+}
+
+function obterSituacaoLeitura(reading, alertsByReading, alertsAvailable) {
+  if (!alertsAvailable) {
+    return {
+      label: 'Situação indisponível',
+      style: styles.situationUnknown,
+      explanation: 'Não foi possível consultar os alertas associados.',
+    };
+  }
+
+  const alert = alertsByReading.get(String(reading.idLeitura));
+  if (!alert) {
+    return {
+      label: 'Sem alerta associado',
+      style: styles.situationNeutral,
+      explanation: 'Não há alerta cadastrado para esta leitura. Isso não representa uma confirmação de ausência de risco.',
+    };
+  }
+
+  const status = String(alert.status || '').toUpperCase();
+  const classification = String(alert.classificacao || '').toUpperCase();
+  if (status === 'ATIVO') {
+    return {
+      label: `ALERTA ATIVO${classification ? ` • ${classification}` : ''}`,
+      style: styles.situationAlert,
+      explanation: alert.mensagemExplicativa || 'Existe um alerta ativo associado a esta leitura.',
+    };
+  }
+
+  if (status === 'RESOLVIDO') {
+    return {
+      label: `ALERTA RESOLVIDO${classification ? ` • ${classification}` : ''}`,
+      style: styles.situationResolved,
+      explanation: alert.mensagemExplicativa || 'O alerta associado a esta leitura foi resolvido.',
+    };
+  }
+
+  return {
+    label: 'Situação não classificada',
+    style: styles.situationUnknown,
+    explanation: 'A API retornou um status de alerta não reconhecido.',
+  };
+}
+
+function obterSituacaoPonto(pointId, readings, alertsByReading, alertsAvailable) {
+  if (!alertsAvailable) {
+    return {
+      label: 'Situação indisponível',
+      style: styles.situationUnknown,
+      explanation: 'Não foi possível consultar os alertas associados às leituras deste ponto.',
+    };
+  }
+
+  const pointAlerts = readings
+    .filter((reading) => String(reading.idPonto) === String(pointId))
+    .map((reading) => ({
+      reading,
+      alert: alertsByReading.get(String(reading.idLeitura)),
+    }))
+    .filter((item) => Boolean(item.alert));
+
+  const activeAlerts = pointAlerts
+    .filter((item) => String(item.alert.status || '').toUpperCase() === 'ATIVO')
+    .sort((a, b) => new Date(b.alert.dataGeracao).getTime() - new Date(a.alert.dataGeracao).getTime());
+
+  const selected = activeAlerts[0] || pointAlerts
+    .sort((a, b) => new Date(b.alert.dataGeracao).getTime() - new Date(a.alert.dataGeracao).getTime())[0];
+
+  if (!selected) {
+    return {
+      label: 'Sem alerta associado',
+      style: styles.situationNeutral,
+      explanation: 'Não há alerta associado às leituras retornadas para este ponto. Isso não representa uma confirmação de ausência de risco.',
+    };
+  }
+
+  const status = String(selected.alert.status || '').toUpperCase();
+  const classification = String(selected.alert.classificacao || '').toUpperCase();
+  if (status === 'ATIVO') {
+    return {
+      label: `ALERTA ATIVO${classification ? ` • ${classification}` : ''}`,
+      style: styles.situationAlert,
+      explanation: `${selected.alert.mensagemExplicativa || 'Existe um alerta ativo.'} Leitura associada: #${selected.reading.idLeitura}.`,
+    };
+  }
+
+  if (status === 'RESOLVIDO') {
+    return {
+      label: `ALERTA RESOLVIDO${classification ? ` • ${classification}` : ''}`,
+      style: styles.situationResolved,
+      explanation: `${selected.alert.mensagemExplicativa || 'O alerta foi resolvido.'} Leitura associada: #${selected.reading.idLeitura}.`,
+    };
+  }
+
+  return {
+    label: 'Situação não classificada',
+    style: styles.situationUnknown,
+    explanation: 'A API retornou um status de alerta não reconhecido para este ponto.',
+  };
+}
+
+export function ReadingsScreen({ navigation }) {
+  const [readings, setReadings] = useState([]);
+  const [points, setPoints] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [filterPointId, setFilterPointId] = useState('TODOS');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [pointsAvailable, setPointsAvailable] = useState(true);
+  const [alertsAvailable, setAlertsAvailable] = useState(true);
+  const [warnings, setWarnings] = useState([]);
+
+  const loadReadings = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    setWarnings([]);
+
+    const [readingsResult, pointsResult, alertsResult] = await Promise.allSettled([
+      listarLeiturasEnchente(),
+      listarPontosMonitoramento(),
+      listarAlertas(),
+    ]);
+
+    if (readingsResult.status === 'fulfilled') {
+      const orderedReadings = [...readingsResult.value].sort(
+        (a, b) => new Date(b.dataHoraLeitura).getTime() - new Date(a.dataHoraLeitura).getTime(),
+      );
+      setReadings(orderedReadings);
+    } else {
+      setReadings([]);
+      setError(getApiErrorMessage(readingsResult.reason));
+    }
+
+    if (pointsResult.status === 'fulfilled') {
+      setPoints(pointsResult.value);
+      setPointsAvailable(true);
+    } else {
+      setPoints([]);
+      setPointsAvailable(false);
+    }
+
+    if (alertsResult.status === 'fulfilled') {
+      setAlerts(alertsResult.value);
+      setAlertsAvailable(true);
+    } else {
+      setAlerts([]);
+      setAlertsAvailable(false);
+    }
+
+    const nextWarnings = [];
+    if (pointsResult.status === 'rejected') {
+      nextWarnings.push('Não foi possível carregar os nomes dos pontos. As leituras continuarão identificadas pelo número do ponto.');
+    }
+    if (alertsResult.status === 'rejected') {
+      nextWarnings.push('Não foi possível consultar os alertas associados às leituras.');
+    }
+    setWarnings(nextWarnings);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    loadReadings();
+  }, [loadReadings]);
+
+  const orderedPoints = [...points].sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'));
+  const pointsById = new Map(points.map((point) => [String(point.idPonto), point]));
+  const alertsByReading = new Map(alerts.map((alert) => [String(alert.idLeitura), alert]));
+  const latestReadingByPoint = new Map();
+
+  readings.forEach((reading) => {
+    const key = String(reading.idPonto);
+    if (!latestReadingByPoint.has(key)) latestReadingByPoint.set(key, reading);
+  });
+
+  const filteredReadings = filterPointId === 'TODOS'
+    ? readings
+    : readings.filter((reading) => String(reading.idPonto) === filterPointId);
 
   return (
     <AppScreen
       title="Leituras"
-      subtitle="Histórico de medições dos pontos de monitoramento."
+      subtitle="Acompanhe o nível da água, a chuva e o histórico das medições registradas."
     >
-      {readings.map((reading) => (
-        <View key={reading.id} style={styles.readingCard}>
-          <Text style={styles.readingTitle}>{reading.date}</Text>
-          <Text style={styles.readingValue}>Nível da água: {reading.level}</Text>
-          <Text style={styles.readingValue}>Volume de chuva: {reading.rain}</Text>
-        </View>
+      <TouchableOpacity style={styles.refreshButton} onPress={loadReadings}>
+        <Text style={styles.refreshText}>↻ Atualizar leituras</Text>
+      </TouchableOpacity>
+
+      {warnings.map((warning) => (
+        <Text key={warning} style={styles.notice}>{warning}</Text>
       ))}
+
+      {loading ? (
+        <LoadingState message="Carregando leituras e situação dos pontos..." />
+      ) : error ? (
+        <ErrorState message={error} onRetry={loadReadings} />
+      ) : (
+        <>
+          <Text style={styles.sectionTitle}>Situação dos pontos monitorados</Text>
+          {pointsAvailable && orderedPoints.length > 0 ? (
+            orderedPoints.map((point) => {
+              const latestReading = latestReadingByPoint.get(String(point.idPonto));
+              const situation = obterSituacaoPonto(
+                point.idPonto,
+                readings,
+                alertsByReading,
+                alertsAvailable,
+              );
+
+              return (
+                <TouchableOpacity
+                  key={point.idPonto}
+                  style={styles.pointSituationCard}
+                  onPress={() => navigation.navigate('PointDetails', { id: point.idPonto })}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.readingCardHeader}>
+                    <Text style={styles.readingTitle}>{point.nome}</Text>
+                    <Text style={styles.pointCode}>#{point.codigo}</Text>
+                  </View>
+                  {latestReading ? (
+                    <>
+                      <Text style={styles.readingMeta}>Última medição: {formatarData(latestReading.dataHoraLeitura)}</Text>
+                      <Text style={styles.readingValue}>Nível da água: {formatarMedida(latestReading.nivelAguaCm, 'cm')}</Text>
+                      <Text style={styles.readingValue}>Chuva: {formatarMedida(latestReading.chuvaMm, 'mm')}</Text>
+                      <Text style={styles.situationLabel}>Situação do ponto, considerando os alertas associados ao histórico</Text>
+                      <Text style={[styles.situationBadge, situation.style]}>{situation.label}</Text>
+                    </>
+                  ) : (
+                    <Text style={styles.readingMeta}>Nenhuma leitura registrada para este ponto.</Text>
+                  )}
+                  {latestReading ? <Text style={styles.readingMeta}>{situation.explanation}</Text> : null}
+                  <Text style={styles.detailsLink}>Ver ponto →</Text>
+                </TouchableOpacity>
+              );
+            })
+          ) : pointsAvailable ? (
+            <EmptyState message="Não existem pontos ativos cadastrados para exibir a situação do monitoramento." />
+          ) : (
+            <Text style={styles.notice}>A situação por ponto está indisponível porque não foi possível consultar os pontos de monitoramento.</Text>
+          )}
+
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Histórico de medições</Text>
+            <Text style={styles.readingCount}>{filteredReadings.length} registro(s)</Text>
+          </View>
+
+          <View style={styles.readingFilters}>
+            <TouchableOpacity
+              style={[styles.filterButton, styles.readingFilterButton, filterPointId === 'TODOS' && styles.filterButtonActive]}
+              onPress={() => setFilterPointId('TODOS')}
+            >
+              <Text style={[styles.filterButtonText, filterPointId === 'TODOS' && styles.filterButtonTextActive]}>Todos</Text>
+            </TouchableOpacity>
+            {orderedPoints.map((point) => (
+              <TouchableOpacity
+                key={point.idPonto}
+                style={[styles.filterButton, styles.readingFilterButton, filterPointId === String(point.idPonto) && styles.filterButtonActive]}
+                onPress={() => setFilterPointId(String(point.idPonto))}
+              >
+                <Text
+                  style={[styles.filterButtonText, filterPointId === String(point.idPonto) && styles.filterButtonTextActive]}
+                  numberOfLines={1}
+                >
+                  {point.nome}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {filteredReadings.length === 0 ? (
+            <EmptyState
+              message={readings.length === 0
+                ? 'Ainda não existem medições registradas na API.'
+                : 'Não existem leituras para o ponto selecionado.'}
+            />
+          ) : (
+            filteredReadings.map((reading) => {
+              const point = pointsById.get(String(reading.idPonto));
+              const pointName = point?.nome || `Ponto #${reading.idPonto}`;
+              const alert = alertsByReading.get(String(reading.idLeitura)) || null;
+              const situation = obterSituacaoLeitura(reading, alertsByReading, alertsAvailable);
+
+              return (
+                <TouchableOpacity
+                  key={reading.idLeitura}
+                  style={styles.readingCard}
+                  onPress={() => navigation.navigate('ReadingDetails', {
+                    id: reading.idLeitura,
+                    reading,
+                    pointName,
+                    alert,
+                    alertsAvailable,
+                  })}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.readingCardHeader}>
+                    <Text style={styles.readingTitle}>{pointName}</Text>
+                    <Text style={styles.readingId}>#{reading.idLeitura}</Text>
+                  </View>
+                  <Text style={styles.readingMeta}>{formatarData(reading.dataHoraLeitura)}</Text>
+                  <Text style={styles.readingValue}>Nível da água: {formatarMedida(reading.nivelAguaCm, 'cm')}</Text>
+                  <Text style={styles.readingValue}>Chuva: {formatarMedida(reading.chuvaMm, 'mm')}</Text>
+                  <Text style={styles.readingValue}>Elevação: {formatarMedida(reading.elevacaoCmH, 'cm/h')}</Text>
+                  <Text style={[styles.situationBadge, situation.style]}>{situation.label}</Text>
+                  <Text style={styles.detailsLink}>Ver detalhes da leitura →</Text>
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </>
+      )}
+    </AppScreen>
+  );
+}
+
+export function ReadingDetailsScreen({ route }) {
+  const readingId = route.params?.id ?? route.params?.reading?.idLeitura;
+  const initialReading = route.params?.reading || null;
+  const [reading, setReading] = useState(initialReading);
+  const readingRef = useRef(initialReading);
+  const [pointName, setPointName] = useState(route.params?.pointName || '');
+  const [alert, setAlert] = useState(route.params?.alert || null);
+  const [alertsAvailable, setAlertsAvailable] = useState(route.params?.alertsAvailable ?? false);
+  const [loading, setLoading] = useState(!route.params?.reading);
+  const [error, setError] = useState('');
+
+  const loadReading = useCallback(async () => {
+    if (!readingId) {
+      setError('O identificador da leitura não foi informado.');
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    const [readingResult, pointsResult, alertsResult] = await Promise.allSettled([
+      obterLeituraEnchentePorId(readingId),
+      listarPontosMonitoramento(),
+      listarAlertas(),
+    ]);
+
+    if (readingResult.status === 'fulfilled') {
+      setReading(readingResult.value);
+      readingRef.current = readingResult.value;
+    } else if (!readingRef.current) {
+      setError(getApiErrorMessage(readingResult.reason));
+    } else {
+      setError('Não foi possível atualizar a leitura. Os dados exibidos podem estar desatualizados.');
+    }
+
+    const currentReading = readingResult.status === 'fulfilled'
+      ? readingResult.value
+      : readingRef.current;
+    if (pointsResult.status === 'fulfilled' && currentReading) {
+      const matchedPoint = pointsResult.value.find(
+        (point) => String(point.idPonto) === String(currentReading.idPonto),
+      );
+      if (matchedPoint) setPointName(matchedPoint.nome);
+    }
+
+    if (alertsResult.status === 'fulfilled' && currentReading) {
+      const matchedAlert = alertsResult.value.find(
+        (item) => String(item.idLeitura) === String(currentReading.idLeitura),
+      );
+      setAlert(matchedAlert || null);
+      setAlertsAvailable(true);
+    } else {
+      setAlertsAvailable(false);
+    }
+
+    setLoading(false);
+  }, [readingId]);
+
+  useEffect(() => {
+    loadReading();
+  }, [loadReading]);
+
+  if (loading && !reading) {
+    return (
+      <AppScreen title="Detalhes da leitura">
+        <LoadingState message="Carregando leitura de enchente..." />
+      </AppScreen>
+    );
+  }
+
+  if (error && !reading) {
+    return (
+      <AppScreen title="Detalhes da leitura">
+        <ErrorState message={error} onRetry={loadReading} />
+      </AppScreen>
+    );
+  }
+
+  if (!reading) {
+    return (
+      <AppScreen title="Detalhes da leitura">
+        <EmptyState message="A leitura solicitada não foi encontrada." />
+      </AppScreen>
+    );
+  }
+
+  const situation = obterSituacaoLeitura(
+    reading,
+    new Map(alert ? [[String(reading.idLeitura), alert]] : []),
+    alertsAvailable,
+  );
+
+  return (
+    <AppScreen
+      title="Detalhes da leitura"
+      subtitle={pointName || `Ponto #${reading.idPonto}`}
+    >
+      <View style={styles.detailCard}>
+        <Text style={styles.detailLabel}>Identificação</Text>
+        <Text style={styles.detailText}>Leitura: #{reading.idLeitura}</Text>
+        <Text style={styles.detailText}>Ponto: {pointName || `#${reading.idPonto}`}</Text>
+
+        <View style={styles.detailDivider} />
+        <Text style={styles.detailLabel}>Medições registradas</Text>
+        <Text style={styles.detailText}>Nível da água: {formatarMedida(reading.nivelAguaCm, 'cm')}</Text>
+        <Text style={styles.detailText}>Chuva: {formatarMedida(reading.chuvaMm, 'mm')}</Text>
+        <Text style={styles.detailText}>Elevação: {formatarMedida(reading.elevacaoCmH, 'cm/h')}</Text>
+
+        <View style={styles.detailDivider} />
+        <Text style={styles.detailLabel}>Data e origem</Text>
+        <Text style={styles.detailText}>Data da medição: {formatarData(reading.dataHoraLeitura)}</Text>
+        <Text style={styles.detailText}>Recebida em: {formatarData(reading.dataRecebimento)}</Text>
+        <Text style={styles.detailText}>Origem: {reading.origem || 'Não informada'}</Text>
+        {reading.chaveEvento ? (
+          <Text style={styles.detailText}>Chave do evento: {reading.chaveEvento}</Text>
+        ) : null}
+
+        <View style={styles.detailDivider} />
+        <Text style={styles.detailLabel}>Situação associada</Text>
+        <Text style={[styles.situationBadge, situation.style]}>{situation.label}</Text>
+        <Text style={styles.detailText}>{situation.explanation}</Text>
+
+        {error ? <Text style={styles.notice}>{error}</Text> : null}
+        <TouchableOpacity style={styles.refreshButton} onPress={loadReading}>
+          <Text style={styles.refreshText}>Atualizar detalhes</Text>
+        </TouchableOpacity>
+      </View>
     </AppScreen>
   );
 }
@@ -936,8 +1369,44 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  readingTitle: { fontWeight: 'bold', color: colors.text, fontSize: 16, marginBottom: 12 },
+  pointSituationCard: {
+    backgroundColor: colors.surface,
+    padding: 18,
+    borderRadius: 13,
+    marginBottom: 13,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  readingCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 8,
+  },
+  readingTitle: { fontWeight: 'bold', color: colors.text, fontSize: 16, flex: 1 },
+  readingId: { color: colors.textSecondary, fontSize: 12 },
+  readingMeta: { color: colors.textSecondary, fontSize: 12, marginBottom: 10 },
   readingValue: { color: colors.textSecondary, marginBottom: 7 },
+  readingCount: { color: colors.textSecondary, fontSize: 12, alignSelf: 'center' },
+  readingFilters: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
+  readingFilterButton: { flex: 0, minWidth: 86, maxWidth: '48%' },
+  situationLabel: { color: colors.textSecondary, fontSize: 12, marginTop: 7, marginBottom: 6 },
+  situationBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 8,
+    overflow: 'hidden',
+    fontSize: 11,
+    fontWeight: 'bold',
+    marginTop: 5,
+    marginBottom: 5,
+  },
+  situationAlert: { color: colors.danger, backgroundColor: colors.dangerLight },
+  situationResolved: { color: colors.success, backgroundColor: colors.successLight },
+  situationNeutral: { color: colors.textSecondary, backgroundColor: colors.background },
+  situationUnknown: { color: colors.warning, backgroundColor: colors.warningLight },
   profileCard: {
     backgroundColor: colors.surface,
     borderRadius: 15,

@@ -8,6 +8,7 @@ import {
   PointsScreen,
   PointDetailsScreen,
   ReadingsScreen,
+  ReadingDetailsScreen,
   ProfileScreen,
   AboutScreen,
 } from '../screens/AppScreens';
@@ -134,6 +135,12 @@ export default function AppNavigator({ user, onLogout }) {
         name="PointDetails"
         component={PointDetailsScreen}
         options={{ title: 'Detalhes do ponto' }}
+      />
+
+      <Stack.Screen
+        name="ReadingDetails"
+        component={ReadingDetailsScreen}
+        options={{ title: 'Detalhes da leitura' }}
       />
 
       <Stack.Screen
