@@ -273,7 +273,9 @@ export function ReadingsScreen() {
   );
 }
 
-export function ProfileScreen({ navigation, onLogout }) {
+export function ProfileScreen({ navigation, onLogout, user }) {
+  const isManager = String(user?.perfil || '').toUpperCase() === 'GESTOR';
+
   return (
     <AppScreen
       title="Meu perfil"
@@ -283,13 +285,43 @@ export function ProfileScreen({ navigation, onLogout }) {
         <Text style={styles.profileIcon}>👤</Text>
 
         <Text style={styles.profileName}>
-          Cidadão de demonstração
+          {user?.nome || 'Usuário'}
         </Text>
 
         <Text style={styles.profileEmail}>
-          A autenticação será integrada à API.
+          {user?.email || 'E-mail não informado'}
         </Text>
+
+        <View style={styles.profileRole}>
+          <Text style={styles.profileRoleText}>
+            {isManager ? 'GESTOR' : 'CIDADÃO'}
+          </Text>
+        </View>
       </View>
+
+      {isManager ? (
+        <View style={styles.adminSection}>
+          <Text style={styles.adminHeading}>Administração</Text>
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => navigation.navigate('UsersManagement')}
+          >
+            <Text style={styles.secondaryButtonText}>
+              Gerenciar usuários
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => navigation.navigate('ManagerRegister')}
+          >
+            <Text style={styles.secondaryButtonText}>
+              Cadastrar novo gestor
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
 
       <TouchableOpacity
         style={styles.secondaryButton}
@@ -305,7 +337,7 @@ export function ProfileScreen({ navigation, onLogout }) {
         onPress={onLogout}
       >
         <Text style={styles.logoutText}>
-          Sair da demonstração
+          Sair da conta
         </Text>
       </TouchableOpacity>
     </AppScreen>
@@ -591,6 +623,32 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
+  },
+
+  profileRole: {
+    backgroundColor: colors.primaryLight,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    marginTop: 13,
+  },
+
+  profileRoleText: {
+    color: colors.primaryDark,
+    fontSize: 11,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+
+  adminSection: {
+    marginTop: 22,
+  },
+
+  adminHeading: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 3,
   },
 
   logoutButton: {

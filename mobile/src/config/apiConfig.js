@@ -6,6 +6,7 @@ export const API_ENDPOINTS = {
   swagger: '/swagger/v1/swagger.json',
   usuarios: '/api/usuarios',
   login: '/api/usuarios/login',
+  criarGestor: '/api/usuarios/gestores',
   alertas: '/api/alertas',
   pontosMonitoramento: '/api/pontos-monitoramento',
   leiturasEnchente: '/api/leituras-enchente',

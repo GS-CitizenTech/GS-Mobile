@@ -1,10 +1,5 @@
-import {
-  createBottomTabNavigator,
-} from '@react-navigation/bottom-tabs';
-
-import {
-  createNativeStackNavigator,
-} from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import {
   DashboardScreen,
@@ -15,24 +10,21 @@ import {
   ProfileScreen,
   AboutScreen,
 } from '../screens/AppScreens';
-
+import ManagerRegisterScreen from '../screens/ManagerRegisterScreen';
+import UserManagementScreen from '../screens/UserManagementScreen';
 import colors from '../theme/colors';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
-function MainTabs({ onLogout }) {
+function MainTabs({ user, onLogout }) {
   return (
     <Tab.Navigator
       initialRouteName="Início"
       screenOptions={{
-        headerStyle: {
-          backgroundColor: colors.surface,
-        },
+        headerStyle: { backgroundColor: colors.surface },
         headerTintColor: colors.primary,
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
+        headerTitleStyle: { fontWeight: 'bold' },
         headerShadowVisible: false,
         tabBarStyle: {
           backgroundColor: colors.surface,
@@ -43,10 +35,7 @@ function MainTabs({ onLogout }) {
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
-        },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}
     >
       <Tab.Screen
@@ -100,6 +89,7 @@ function MainTabs({ onLogout }) {
         {(props) => (
           <ProfileScreen
             {...props}
+            user={user}
             onLogout={onLogout}
           />
         )}
@@ -108,33 +98,25 @@ function MainTabs({ onLogout }) {
   );
 }
 
-export default function AppNavigator({ onLogout }) {
+export default function AppNavigator({ user, onLogout }) {
+  const isManager = String(user?.perfil || '').toUpperCase() === 'GESTOR';
+
   return (
     <Stack.Navigator
       initialRouteName="Main"
       screenOptions={{
-        headerStyle: {
-          backgroundColor: colors.surface,
-        },
+        headerStyle: { backgroundColor: colors.surface },
         headerTintColor: colors.primary,
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
+        headerTitleStyle: { fontWeight: 'bold' },
         headerShadowVisible: false,
-        contentStyle: {
-          backgroundColor: colors.background,
-        },
+        contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen
-        name="Main"
-        options={{
-          headerShown: false,
-        }}
-      >
+      <Stack.Screen name="Main" options={{ headerShown: false }}>
         {(props) => (
           <MainTabs
             {...props}
+            user={user}
             onLogout={onLogout}
           />
         )}
@@ -143,18 +125,30 @@ export default function AppNavigator({ onLogout }) {
       <Stack.Screen
         name="AlertDetails"
         component={AlertDetailsScreen}
-        options={{
-          title: 'Detalhes do alerta',
-        }}
+        options={{ title: 'Detalhes do alerta' }}
       />
 
       <Stack.Screen
         name="About"
         component={AboutScreen}
-        options={{
-          title: 'Sobre o aplicativo',
-        }}
+        options={{ title: 'Sobre o aplicativo' }}
       />
+
+      {isManager ? (
+        <>
+          <Stack.Screen
+            name="ManagerRegister"
+            component={ManagerRegisterScreen}
+            options={{ title: 'Cadastrar gestor' }}
+          />
+          <Stack.Screen
+            name="UsersManagement"
+            options={{ title: 'Gerenciar usuários' }}
+          >
+            {(props) => <UserManagementScreen {...props} user={user} />}
+          </Stack.Screen>
+        </>
+      ) : null}
     </Stack.Navigator>
   );
 }

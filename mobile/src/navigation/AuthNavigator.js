@@ -1,44 +1,27 @@
-import {
-  createNativeStackNavigator,
-} from '@react-navigation/native-stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import {
-  LoginScreen,
-  RegisterScreen,
-} from '../screens/AuthScreens';
-
+import { LoginScreen, RegisterScreen } from '../screens/AuthScreens';
 import colors from '../theme/colors';
 
 const Stack = createNativeStackNavigator();
 
-export default function AuthNavigator({ onDemoLogin }) {
+export default function AuthNavigator({ onAuthenticated }) {
   return (
     <Stack.Navigator
       initialRouteName="Login"
       screenOptions={{
-        headerStyle: {
-          backgroundColor: colors.surface,
-        },
+        headerStyle: { backgroundColor: colors.surface },
         headerTintColor: colors.primary,
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
+        headerTitleStyle: { fontWeight: 'bold' },
         headerShadowVisible: false,
-        contentStyle: {
-          backgroundColor: colors.background,
-        },
+        contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen
-        name="Login"
-        options={{
-          headerShown: false,
-        }}
-      >
+      <Stack.Screen name="Login" options={{ headerShown: false }}>
         {(props) => (
           <LoginScreen
             {...props}
-            onDemoLogin={onDemoLogin}
+            onAuthenticated={onAuthenticated}
           />
         )}
       </Stack.Screen>
@@ -46,9 +29,7 @@ export default function AuthNavigator({ onDemoLogin }) {
       <Stack.Screen
         name="Register"
         component={RegisterScreen}
-        options={{
-          title: 'Criar conta',
-        }}
+        options={{ title: 'Criar conta' }}
       />
     </Stack.Navigator>
   );
