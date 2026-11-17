@@ -6,11 +6,13 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 
 import AppScreen from '../components/AppScreen';
 import colors from '../theme/colors';
 import { listarAlertas, obterAlertaPorId } from '../services/alertaService';
+import { listarPontosMonitoramento, obterPontoMonitoramentoPorId } from '../services/pontoMonitoramentoService';
 import { getApiErrorMessage } from '../services/apiError';
 
 function InfoCard({ title, value, description, color }) {
@@ -99,7 +101,7 @@ function LoadingState({ message = 'Carregando alertas...' }) {
 function ErrorState({ message, onRetry }) {
   return (
     <View style={styles.stateCard}>
-      <Text style={styles.stateTitle}>Não foi possível carregar</Text>
+      <Text style={styles.stateTitle}>Não foi possível carregar os dados</Text>
       <Text style={styles.stateText}>{message}</Text>
       <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
         <Text style={styles.retryButtonText}>Tentar novamente</Text>
@@ -111,7 +113,7 @@ function ErrorState({ message, onRetry }) {
 function EmptyState({ message }) {
   return (
     <View style={styles.stateCard}>
-      <Text style={styles.stateTitle}>Nenhum alerta encontrado</Text>
+      <Text style={styles.stateTitle}>Nenhum registro encontrado</Text>
       <Text style={styles.stateText}>{message}</Text>
     </View>
   );
@@ -399,25 +401,223 @@ export function AlertDetailsScreen({ route }) {
   );
 }
 
-export function PointsScreen() {
-  const points = [
-    { id: 1, name: 'Ponto Central', location: 'Região Central' },
-    { id: 2, name: 'Ponto Norte', location: 'Zona Norte' },
-    { id: 3, name: 'Ponto Sul', location: 'Zona Sul' },
-  ];
+function formatarEnderecoPonto(point) {
+  return [
+    point.logradouro,
+    point.bairro,
+    point.cidade,
+    point.uf,
+  ].filter(Boolean).join(', ') || 'Endereço não informado';
+}
+
+async function abrirLocalizacaoPonto(point) {
+  if (point.latitude == null || point.longitude == null) {
+    Alert.alert(
+      'Localização indisponível',
+      'Este ponto ainda não possui latitude e longitude cadastradas.',
+    );
+    return;
+  }
+
+  const latitude = Number(point.latitude);
+  const longitude = Number(point.longitude);
+
+  if (
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude) ||
+    latitude < -90 ||
+    latitude > 90 ||
+    longitude < -180 ||
+    longitude > 180
+  ) {
+    Alert.alert('Coordenadas inválidas', 'Não foi possível abrir a localização deste ponto.');
+    return;
+  }
+
+  const url = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
+
+  try {
+    await Linking.openURL(url);
+  } catch (error) {
+    Alert.alert('Não foi possível abrir o mapa', 'Verifique se há um aplicativo de mapas disponível.');
+  }
+}
+
+export function PointsScreen({ navigation }) {
+  const [points, setPoints] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const loadPoints = useCallback(async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const data = await listarPontosMonitoramento();
+      setPoints(data);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPoints();
+  }, [loadPoints]);
 
   return (
     <AppScreen
       title="Monitoramento"
-      subtitle="Consulte os pontos de acompanhamento de enchentes."
+      subtitle="Consulte os pontos ativos de acompanhamento de enchentes."
     >
-      {points.map((point) => (
-        <View key={point.id} style={styles.pointCard}>
-          <Text style={styles.pointTitle}>📍 {point.name}</Text>
-          <Text style={styles.pointLocation}>{point.location}</Text>
-          <Text style={styles.pointStatus}>● Ponto demonstrativo</Text>
-        </View>
-      ))}
+      <TouchableOpacity style={styles.refreshButton} onPress={loadPoints}>
+        <Text style={styles.refreshText}>↻ Atualizar pontos</Text>
+      </TouchableOpacity>
+
+      {loading ? (
+        <LoadingState message="Carregando pontos de monitoramento..." />
+      ) : error ? (
+        <ErrorState message={error} onRetry={loadPoints} />
+      ) : points.length === 0 ? (
+        <EmptyState message="Não existem pontos ativos de monitoramento cadastrados." />
+      ) : (
+        <>
+          <Text style={styles.pointsCount}>
+            {points.length} {points.length === 1 ? 'ponto ativo encontrado' : 'pontos ativos encontrados'}
+          </Text>
+
+          {points.map((point) => (
+            <TouchableOpacity
+              key={point.idPonto}
+              style={styles.pointCard}
+              onPress={() => navigation.navigate('PointDetails', { id: point.idPonto })}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={`Consultar ponto ${point.nome}`}
+            >
+              <View style={styles.pointHeader}>
+                <Text style={styles.pointTitle}>📍 {point.nome}</Text>
+                <Text style={styles.pointActiveBadge}>ATIVO</Text>
+              </View>
+              <Text style={styles.pointCode}>Código: {point.codigo}</Text>
+              <Text style={styles.pointLocation}>{formatarEnderecoPonto(point)}</Text>
+              {point.descricao ? (
+                <Text style={styles.pointDescription} numberOfLines={2}>{point.descricao}</Text>
+              ) : null}
+              <Text style={styles.detailsLink}>Ver detalhes →</Text>
+            </TouchableOpacity>
+          ))}
+        </>
+      )}
+    </AppScreen>
+  );
+}
+
+export function PointDetailsScreen({ route }) {
+  const pointId = route.params?.id;
+  const [point, setPoint] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const loadPoint = useCallback(async () => {
+    if (!pointId) {
+      setError('O identificador do ponto não foi informado.');
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const data = await obterPontoMonitoramentoPorId(pointId);
+      setPoint(data);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError));
+    } finally {
+      setLoading(false);
+    }
+  }, [pointId]);
+
+  useEffect(() => {
+    loadPoint();
+  }, [loadPoint]);
+
+  if (loading) {
+    return (
+      <AppScreen title="Detalhes do ponto">
+        <LoadingState message="Carregando informações do ponto..." />
+      </AppScreen>
+    );
+  }
+
+  if (error) {
+    return (
+      <AppScreen title="Detalhes do ponto">
+        <ErrorState message={error} onRetry={loadPoint} />
+      </AppScreen>
+    );
+  }
+
+  if (!point) {
+    return (
+      <AppScreen title="Detalhes do ponto">
+        <EmptyState message="O ponto solicitado não foi encontrado." />
+      </AppScreen>
+    );
+  }
+
+  const possuiCoordenadas = point.latitude != null && point.longitude != null;
+
+  return (
+    <AppScreen
+      title={point.nome}
+      subtitle="Informações cadastradas para este ponto de monitoramento."
+    >
+      <View style={styles.detailCard}>
+        <Text style={styles.pointActiveBadge}>{point.ativo ? 'ATIVO' : 'INATIVO'}</Text>
+        <Text style={styles.detailLabel}>Identificação</Text>
+        <Text style={styles.detailText}>ID: {point.idPonto}</Text>
+        <Text style={styles.detailText}>Código: {point.codigo}</Text>
+
+        <View style={styles.detailDivider} />
+        <Text style={styles.detailLabel}>Descrição</Text>
+        <Text style={styles.detailText}>
+          {point.descricao || 'Descrição não informada.'}
+        </Text>
+
+        <View style={styles.detailDivider} />
+        <Text style={styles.detailLabel}>Localização</Text>
+        <Text style={styles.detailText}>{formatarEnderecoPonto(point)}</Text>
+        <Text style={styles.detailText}>
+          Latitude: {point.latitude ?? 'Não informada'}
+        </Text>
+        <Text style={styles.detailText}>
+          Longitude: {point.longitude ?? 'Não informada'}
+        </Text>
+
+        <Text style={styles.detailText}>
+          Cadastro: {formatarData(point.dataCadastro)}
+        </Text>
+
+        {possuiCoordenadas ? (
+          <TouchableOpacity
+            style={styles.mapButton}
+            onPress={() => abrirLocalizacaoPonto(point)}
+          >
+            <Text style={styles.mapButtonText}>Abrir localização no mapa</Text>
+          </TouchableOpacity>
+        ) : (
+          <Text style={styles.notice}>
+            Este ponto não possui coordenadas cadastradas. A visualização no mapa ficará disponível quando latitude e longitude forem informadas.
+          </Text>
+        )}
+
+        <TouchableOpacity style={styles.refreshButton} onPress={loadPoint}>
+          <Text style={styles.refreshText}>Atualizar informações</Text>
+        </TouchableOpacity>
+      </View>
     </AppScreen>
   );
 }
@@ -698,9 +898,36 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  pointTitle: { fontSize: 17, fontWeight: 'bold', color: colors.text },
-  pointLocation: { color: colors.textSecondary, marginTop: 8 },
-  pointStatus: { color: colors.secondary, fontSize: 12, marginTop: 12 },
+  pointHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  pointTitle: { fontSize: 17, fontWeight: 'bold', color: colors.text, flex: 1 },
+  pointCode: { color: colors.primary, fontSize: 12, fontWeight: 'bold', marginTop: 9 },
+  pointLocation: { color: colors.textSecondary, marginTop: 8, lineHeight: 20 },
+  pointDescription: { color: colors.textSecondary, marginTop: 8, lineHeight: 19 },
+  pointActiveBadge: {
+    alignSelf: 'flex-start',
+    color: colors.success,
+    backgroundColor: colors.successLight,
+    fontSize: 10,
+    fontWeight: 'bold',
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: 7,
+    overflow: 'hidden',
+  },
+  pointsCount: { color: colors.textSecondary, fontSize: 13, marginBottom: 12 },
+  mapButton: {
+    backgroundColor: colors.primary,
+    padding: 15,
+    alignItems: 'center',
+    borderRadius: 10,
+    marginTop: 16,
+  },
+  mapButtonText: { color: colors.textLight, fontWeight: 'bold' },
   readingCard: {
     backgroundColor: colors.surface,
     padding: 18,

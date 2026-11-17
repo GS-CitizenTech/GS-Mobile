@@ -6,6 +6,7 @@ import {
   AlertsScreen,
   AlertDetailsScreen,
   PointsScreen,
+  PointDetailsScreen,
   ReadingsScreen,
   ProfileScreen,
   AboutScreen,
@@ -126,6 +127,13 @@ export default function AppNavigator({ user, onLogout }) {
         name="AlertDetails"
         component={AlertDetailsScreen}
         options={{ title: 'Detalhes do alerta' }}
+      />
+
+
+      <Stack.Screen
+        name="PointDetails"
+        component={PointDetailsScreen}
+        options={{ title: 'Detalhes do ponto' }}
       />
 
       <Stack.Screen
