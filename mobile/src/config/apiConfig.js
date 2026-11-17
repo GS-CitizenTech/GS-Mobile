@@ -10,4 +10,5 @@ export const API_ENDPOINTS = {
   alertas: '/api/alertas',
   pontosMonitoramento: '/api/pontos-monitoramento',
   leiturasEnchente: '/api/leituras-enchente',
+  ocorrencias: '/api/ocorrencias',
 };

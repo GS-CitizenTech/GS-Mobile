@@ -17,6 +17,7 @@ A aplicação disponibiliza uma API REST para gerenciamento de usuários e infor
 ## Funcionalidades implementadas
 
 - **Gerenciamento de usuários:** endpoints para operações relacionadas aos usuários.
+- **Ocorrências:** CRUD autenticado para relatos de alagamentos e outras situações de risco, com propriedade por cidadão e administração por gestores.
 - **Documentação da API:** documentação interativa utilizando Swagger/OpenAPI.
 - **Idempotência:** evita a execução duplicada de operações quando uma requisição é repetida com a mesma chave.
 - **Rate Limiting:** controla a quantidade de requisições recebidas e protege a API contra excesso de chamadas.
@@ -246,4 +247,10 @@ Os testes contemplam:
 - Health Checks da API.
 - Disponibilidade e indisponibilidade da conexão com o Oracle.
 
-**Resultado da execução da suíte:** 34 testes aprovados e 0 falhas.
+**Histórico:** antes da inclusão do CRUD de ocorrências, a suíte possuía 34 testes aprovados. A Etapa 9 adicionou seis testes unitários para as regras de ocorrências; execute os comandos acima para validar a suíte atualizada no ambiente local.
+
+## CRUD de ocorrências
+
+O recurso de ocorrências permite que cidadãos registrem e acompanhem relatos, enquanto gestores consultam e administram todos os registros. As regras de propriedade são aplicadas na API a partir do usuário identificado no JWT.
+
+Consulte [docs/Ocorrencias.md](docs/Ocorrencias.md) para ver os tipos, status, endpoints, regras de acesso e instruções para criar a tabela `OCORRENCIA` no Oracle existente. Para bancos já configurados, execute `add-ocorrencia.sql` uma única vez no schema utilizado pela API antes de testar o recurso.

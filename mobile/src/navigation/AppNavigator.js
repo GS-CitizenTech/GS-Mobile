@@ -14,6 +14,11 @@ import {
 } from '../screens/AppScreens';
 import ManagerRegisterScreen from '../screens/ManagerRegisterScreen';
 import UserManagementScreen from '../screens/UserManagementScreen';
+import {
+  OccurrencesScreen,
+  OccurrenceFormScreen,
+  OccurrenceDetailsScreen,
+} from '../screens/OccurrenceScreens';
 import colors from '../theme/colors';
 
 const Tab = createBottomTabNavigator();
@@ -81,6 +86,17 @@ function MainTabs({ user, onLogout }) {
       />
 
       <Tab.Screen
+        name="Ocorrências"
+        options={{
+          title: 'Ocorrências',
+          tabBarLabel: 'Ocorrências',
+          tabBarIcon: () => null,
+        }}
+      >
+        {(props) => <OccurrencesScreen {...props} user={user} />}
+      </Tab.Screen>
+
+      <Tab.Screen
         name="Perfil"
         options={{
           title: 'Meu perfil',
@@ -142,6 +158,20 @@ export default function AppNavigator({ user, onLogout }) {
         component={ReadingDetailsScreen}
         options={{ title: 'Detalhes da leitura' }}
       />
+
+      <Stack.Screen
+        name="OccurrenceForm"
+        options={{ title: 'Registrar ocorrência' }}
+      >
+        {(props) => <OccurrenceFormScreen {...props} user={user} />}
+      </Stack.Screen>
+
+      <Stack.Screen
+        name="OccurrenceDetails"
+        options={{ title: 'Detalhes da ocorrência' }}
+      >
+        {(props) => <OccurrenceDetailsScreen {...props} user={user} />}
+      </Stack.Screen>
 
       <Stack.Screen
         name="About"

@@ -28,4 +28,7 @@ public class PontoMonitoramento
 
     public ICollection<LeituraEnchente> Leituras { get; set; }
         = new List<LeituraEnchente>();
+
+
+    public ICollection<Ocorrencia> Ocorrencias { get; set; } = new List<Ocorrencia>();
 }

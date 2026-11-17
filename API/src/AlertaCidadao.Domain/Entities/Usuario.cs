@@ -17,4 +17,7 @@ public class Usuario
     public bool Ativo { get; set; } = true;
 
     public DateTimeOffset DataCadastro { get; set; }
+
+
+    public ICollection<Ocorrencia> Ocorrencias { get; set; } = new List<Ocorrencia>();
 }

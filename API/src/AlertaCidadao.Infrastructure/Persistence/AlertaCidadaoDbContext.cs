@@ -24,6 +24,8 @@ public class AlertaCidadaoDbContext : DbContext
     public DbSet<RequisicaoIdempotencia> RequisicoesIdempotencia =>
         Set<RequisicaoIdempotencia>();
 
+    public DbSet<Ocorrencia> Ocorrencias => Set<Ocorrencia>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -33,6 +35,7 @@ public class AlertaCidadaoDbContext : DbContext
         ConfigurarLeituraEnchente(modelBuilder);
         ConfigurarAlerta(modelBuilder);
         ConfigurarIdempotencia(modelBuilder);
+        ConfigurarOcorrencia(modelBuilder);
     }
 
     private static void ConfigurarUsuario(ModelBuilder modelBuilder)
@@ -293,6 +296,85 @@ public class AlertaCidadaoDbContext : DbContext
                 .WithOne(x => x.Alerta)
                 .HasForeignKey<Alerta>(x => x.IdLeitura)
                 .HasConstraintName("FK_ALERTA_LEITURA")
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigurarOcorrencia(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Ocorrencia>(entity =>
+        {
+            entity.ToTable("OCORRENCIA");
+
+            entity.HasKey(x => x.IdOcorrencia)
+                .HasName("PK_OCORRENCIA");
+
+            entity.Property(x => x.IdOcorrencia)
+                .HasColumnName("ID_OCORRENCIA")
+                .HasColumnType("NUMBER(20,0)")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(x => x.IdUsuario)
+                .HasColumnName("ID_USUARIO")
+                .HasColumnType("NUMBER(20,0)");
+
+            entity.Property(x => x.IdPonto)
+                .HasColumnName("ID_PONTO")
+                .HasColumnType("NUMBER(20,0)");
+
+            entity.Property(x => x.Tipo)
+                .HasColumnName("TIPO")
+                .HasMaxLength(30)
+                .IsRequired();
+
+            entity.Property(x => x.Titulo)
+                .HasColumnName("TITULO")
+                .HasMaxLength(120)
+                .IsRequired();
+
+            entity.Property(x => x.Descricao)
+                .HasColumnName("DESCRICAO")
+                .HasMaxLength(1000)
+                .IsRequired();
+
+            entity.Property(x => x.Logradouro).HasColumnName("LOGRADOURO").HasMaxLength(180);
+            entity.Property(x => x.Bairro).HasColumnName("BAIRRO").HasMaxLength(100);
+            entity.Property(x => x.Cidade).HasColumnName("CIDADE").HasMaxLength(100);
+            entity.Property(x => x.Uf).HasColumnName("UF").HasColumnType("CHAR(2)");
+            entity.Property(x => x.Latitude).HasColumnName("LATITUDE").HasColumnType("NUMBER(9,6)");
+            entity.Property(x => x.Longitude).HasColumnName("LONGITUDE").HasColumnType("NUMBER(9,6)");
+
+            entity.Property(x => x.Status)
+                .HasColumnName("STATUS")
+                .HasMaxLength(20)
+                .HasDefaultValue("ABERTA")
+                .IsRequired();
+
+            entity.Property(x => x.DataCriacao)
+                .HasColumnName("DATA_CRIACAO")
+                .HasColumnType("TIMESTAMP WITH TIME ZONE")
+                .HasDefaultValueSql("SYSTIMESTAMP");
+
+            entity.Property(x => x.DataAtualizacao)
+                .HasColumnName("DATA_ATUALIZACAO")
+                .HasColumnType("TIMESTAMP WITH TIME ZONE");
+
+            entity.HasIndex(x => new { x.IdUsuario, x.DataCriacao })
+                .HasDatabaseName("IX_OCORRENCIA_USUARIO_DATA");
+
+            entity.HasIndex(x => x.IdPonto)
+                .HasDatabaseName("IX_OCORRENCIA_PONTO");
+
+            entity.HasOne(x => x.Usuario)
+                .WithMany(x => x.Ocorrencias)
+                .HasForeignKey(x => x.IdUsuario)
+                .HasConstraintName("FK_OCORRENCIA_USUARIO")
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Ponto)
+                .WithMany(x => x.Ocorrencias)
+                .HasForeignKey(x => x.IdPonto)
+                .HasConstraintName("FK_OCORRENCIA_PONTO")
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }

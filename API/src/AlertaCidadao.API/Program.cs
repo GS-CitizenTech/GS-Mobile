@@ -145,6 +145,7 @@ app.MapUsuarioEndpoints();
 app.MapLeituraEnchenteEndpoints();
 app.MapAlertaEndpoints();
 app.MapRequisicaoIdempotenciaEndpoints();
+app.MapOcorrenciaEndpoints();
 
 // Liveness: confirma que o processo da API está respondendo, sem depender do Oracle.
 app.MapHealthChecks("/health/live", new HealthCheckOptions

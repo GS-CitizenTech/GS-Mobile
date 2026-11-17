@@ -229,6 +229,98 @@ namespace AlertaCidadao.Infrastructure.Persistence.Migrations
                     b.ToTable("PONTO_MONITORAMENTO", (string)null);
                 });
 
+            modelBuilder.Entity("AlertaCidadao.Domain.Entities.Ocorrencia", b =>
+                {
+                    b.Property<long>("IdOcorrencia")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("NUMBER(20,0)")
+                        .HasColumnName("ID_OCORRENCIA");
+
+                    OraclePropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("IdOcorrencia"));
+
+                    b.Property<string>("Bairro")
+                        .HasMaxLength(100)
+                        .HasColumnType("NVARCHAR2(100)")
+                        .HasColumnName("BAIRRO");
+
+                    b.Property<string>("Cidade")
+                        .HasMaxLength(100)
+                        .HasColumnType("NVARCHAR2(100)")
+                        .HasColumnName("CIDADE");
+
+                    b.Property<DateTimeOffset>("DataCriacao")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TIMESTAMP WITH TIME ZONE")
+                        .HasColumnName("DATA_CRIACAO")
+                        .HasDefaultValueSql("SYSTIMESTAMP");
+
+                    b.Property<DateTimeOffset?>("DataAtualizacao")
+                        .HasColumnType("TIMESTAMP WITH TIME ZONE")
+                        .HasColumnName("DATA_ATUALIZACAO");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("NVARCHAR2(1000)")
+                        .HasColumnName("DESCRICAO");
+
+                    b.Property<long?>("IdPonto")
+                        .HasColumnType("NUMBER(20,0)")
+                        .HasColumnName("ID_PONTO");
+
+                    b.Property<long>("IdUsuario")
+                        .HasColumnType("NUMBER(20,0)")
+                        .HasColumnName("ID_USUARIO");
+
+                    b.Property<decimal?>("Latitude")
+                        .HasColumnType("NUMBER(9,6)")
+                        .HasColumnName("LATITUDE");
+
+                    b.Property<string>("Logradouro")
+                        .HasMaxLength(180)
+                        .HasColumnType("NVARCHAR2(180)")
+                        .HasColumnName("LOGRADOURO");
+
+                    b.Property<decimal?>("Longitude")
+                        .HasColumnType("NUMBER(9,6)")
+                        .HasColumnName("LONGITUDE");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("NVARCHAR2(20)")
+                        .HasDefaultValue("ABERTA")
+                        .HasColumnName("STATUS");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("NVARCHAR2(30)")
+                        .HasColumnName("TIPO");
+
+                    b.Property<string>("Titulo")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("NVARCHAR2(120)")
+                        .HasColumnName("TITULO");
+
+                    b.Property<string>("Uf")
+                        .HasColumnType("CHAR(2)")
+                        .HasColumnName("UF");
+
+                    b.HasKey("IdOcorrencia")
+                        .HasName("PK_OCORRENCIA");
+
+                    b.HasIndex("IdPonto")
+                        .HasDatabaseName("IX_OCORRENCIA_PONTO");
+
+                    b.HasIndex("IdUsuario", "DataCriacao")
+                        .HasDatabaseName("IX_OCORRENCIA_USUARIO_DATA");
+
+                    b.ToTable("OCORRENCIA", (string)null);
+                });
+
             modelBuilder.Entity("AlertaCidadao.Domain.Entities.RequisicaoIdempotencia", b =>
                 {
                     b.Property<string>("ChaveIdempotencia")
@@ -374,7 +466,33 @@ namespace AlertaCidadao.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("AlertaCidadao.Domain.Entities.PontoMonitoramento", b =>
                 {
                     b.Navigation("Leituras");
+                    b.Navigation("Ocorrencias");
                 });
+
+            modelBuilder.Entity("AlertaCidadao.Domain.Entities.Usuario", b =>
+                {
+                    b.Navigation("Ocorrencias");
+                });
+
+            modelBuilder.Entity("AlertaCidadao.Domain.Entities.Ocorrencia", b =>
+                {
+                    b.HasOne("AlertaCidadao.Domain.Entities.PontoMonitoramento", "Ponto")
+                        .WithMany("Ocorrencias")
+                        .HasForeignKey("IdPonto")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_OCORRENCIA_PONTO");
+
+                    b.HasOne("AlertaCidadao.Domain.Entities.Usuario", "Usuario")
+                        .WithMany("Ocorrencias")
+                        .HasForeignKey("IdUsuario")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_OCORRENCIA_USUARIO");
+
+                    b.Navigation("Ponto");
+                    b.Navigation("Usuario");
+                });
+
 #pragma warning restore 612, 618
         }
     }

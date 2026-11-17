@@ -51,3 +51,54 @@ Accept: application/json
 ### Listar metadados de idempotência
 GET {{AlertaCidadao.API_HostAddress}}/api/requisicoes-idempotencia
 Accept: application/json
+
+
+### Listar minhas ocorrências (cidadão) ou todas (gestor)
+GET {{AlertaCidadao.API_HostAddress}}/api/ocorrencias
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Criar ocorrência
+POST {{AlertaCidadao.API_HostAddress}}/api/ocorrencias
+Content-Type: application/json
+Authorization: Bearer {{token}}
+Idempotency-Key: ocorrencia-teste-001
+
+{
+  "tipo": "ALAGAMENTO",
+  "titulo": "Alagamento próximo à escola",
+  "descricao": "A água está acumulando na rua e os pedestres estão com dificuldade para atravessar.",
+  "idPonto": 1,
+  "logradouro": "Rua Central",
+  "bairro": "Centro",
+  "cidade": "São Paulo",
+  "uf": "SP"
+}
+
+### Atualizar ocorrência (gestor pode enviar status)
+PUT {{AlertaCidadao.API_HostAddress}}/api/ocorrencias/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+Idempotency-Key: ocorrencia-atualizar-001
+
+{
+  "tipo": "ALAGAMENTO",
+  "titulo": "Alagamento próximo à escola",
+  "descricao": "A equipe verificou o local e iniciou as providências para resolver a situação.",
+  "idPonto": 1,
+  "logradouro": "Rua Central",
+  "bairro": "Centro",
+  "cidade": "São Paulo",
+  "uf": "SP",
+  "status": "EM_ANALISE"
+}
+
+### Consultar ocorrência
+GET {{AlertaCidadao.API_HostAddress}}/api/ocorrencias/1
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Excluir ocorrência
+DELETE {{AlertaCidadao.API_HostAddress}}/api/ocorrencias/1
+Authorization: Bearer {{token}}
+Idempotency-Key: ocorrencia-excluir-001

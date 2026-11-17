@@ -1,184 +1,65 @@
-# 🌱 Eco Monitor
+# Alerta Cidadão — CitizenTech
 
-## 📱 Sobre o Projeto
+Aplicativo móvel e API para apoio ao monitoramento de enchentes, registro de ocorrências e acompanhamento de alertas e pontos de monitoramento.
 
-O Eco Monitor é um aplicativo mobile desenvolvido em React Native para monitoramento de sensores ambientais utilizados em propriedades agrícolas.
-
-A aplicação foi criada como parte da Global Solution, com o objetivo de auxiliar no acompanhamento de sensores responsáveis pela coleta de dados ambientais, permitindo o gerenciamento completo dos dispositivos cadastrados.
-
-O aplicativo está integrado a uma API REST desenvolvida em Java Spring Boot com banco de dados Oracle, realizando operações em tempo real através de requisições HTTP.
-
----
-
-## 🎯 Objetivo da Solução
-
-A solução busca facilitar o monitoramento ambiental em propriedades rurais através do gerenciamento de sensores responsáveis pela coleta de informações importantes para a agricultura.
-
-Com o aplicativo é possível:
-
-* Cadastrar sensores ambientais
-* Consultar sensores cadastrados
-* Atualizar informações dos sensores
-* Remover sensores do sistema
-* Visualizar o local associado a cada sensor
-
----
-
-## 👥 Integrantes do Grupo
-
-Aluno: Lucas Rafael Solimene / RM: 565194
-
-Aluno: Samyr Couto Oliveira / RM: 565562
-
-Aluno: Henrique Teixeira Cesar / RM: 563088
-
----
-
-## 🎥 Vídeo de Demonstração
-
-**Link do vídeo:**
-
-https://www.youtube.com/shorts/6AjHFYb7YS4
-
----
-
-## 🚀 Funcionalidades
-
-### Autenticação
-
-* Login de usuário
-* Cadastro de usuário
-
-### Dashboard
-
-* Visualização de informações ambientais
-
-### Gerenciamento de Sensores
-
-* Cadastro de sensores
-* Consulta de sensores
-* Atualização de sensores
-* Exclusão de sensores
-* Associação de sensores a locais/fazendas
-
----
-
-## 🛠 Tecnologias Utilizadas
-
-### Front-end
-
-* React Native
-* Expo
-* React Navigation
-* Axios
-* React Native Picker
-* Expo Vector Icons
-
-### Back-end
-
-* Java
-* Spring Boot
-* Oracle Database
-* Swagger
-
----
-
-## 📂 Estrutura do Projeto
+## Estrutura
 
 ```text
-Projeto
-│
-├── API
-│   └── Projeto Java Spring Boot
-│
-├── GS-MOBILE
-│   └── Projeto React Native
-│
-└── README.md
+GS-Mobile/
+├── API/       # API REST .NET 9, camadas e testes xUnit
+└── mobile/    # Aplicativo React Native com Expo
 ```
 
----
+## Tecnologias
 
-## 📡 Integração com API
+- Mobile: React Native, Expo, React Navigation, Axios e Expo SecureStore.
+- Backend: C#, .NET 9, ASP.NET Core e Entity Framework Core.
+- Banco de dados: Oracle Database.
+- Autenticação: JWT Bearer, com perfis de cidadão e gestor.
 
-A aplicação consome uma API REST desenvolvida na disciplina de Java.
+## Recursos do aplicativo
 
-Operações implementadas:
+- Login, cadastro de cidadão e persistência segura da sessão.
+- Perfil e gerenciamento de usuários para gestores.
+- Consulta de alertas e detalhes.
+- Consulta de pontos de monitoramento e abertura de localização em mapas.
+- Consulta de leituras de enchentes e histórico por ponto.
+- Registro e acompanhamento de ocorrências, com permissões específicas para cidadãos e gestores.
 
-| Método | Endpoint               | Função           |
-| ------ | ---------------------- | ---------------- |
-| GET    | /sensor/todos          | Listar sensores  |
-| POST   | /sensor/novo           | Criar sensor     |
-| PUT    | /sensor/atualizar/{id} | Atualizar sensor |
-| DELETE | /sensor/remover/{id}   | Excluir sensor   |
+## Executar a API
 
----
+Pré-requisitos: .NET 9 SDK e Oracle Database configurado.
 
-## 📱 Telas Desenvolvidas
+1. Configure a connection string `ConnectionStrings:Oracle` e as opções JWT por User Secrets ou configuração segura do ambiente. Não armazene credenciais no repositório.
+2. Se estiver utilizando um banco Oracle já existente, aplique os scripts de migração necessários. Para o CRUD de ocorrências da Etapa 9, execute `API/add-ocorrencia.sql` uma única vez no mesmo schema utilizado pela API.
+3. No PowerShell, execute:
 
-* Login
-* Cadastro
-* Dashboard
-* Lista de Sensores
-* Cadastro de Sensor
-* Edição de Sensor
-
----
-
-## ▶️ Como Executar o Projeto
-
-### 1. Executar a API Java
-
-Abra o Prompt de Comando (CMD) e navegue até a pasta:
-
-```bash
-cd API
+```powershell
+Set-Location ".\API"
+dotnet restore .\AlertaCidadao.sln
+dotnet build .\AlertaCidadao.sln
+dotnet test .\AlertaCidadao.sln
+dotnet run --project .\src\AlertaCidadao.API
 ```
 
-Execute o projeto Spring Boot:
+Swagger: `http://localhost:5075/swagger` (confira a porta efetiva no perfil de execução).
 
-```bash
-mvnw spring-boot:run
-```
+## Executar o Mobile
 
-Aguarde até que a API seja iniciada corretamente.
+1. Confira `mobile/src/config/apiConfig.js` e configure `API_BASE_URL` com o endereço da API acessível pelo aparelho. Em teste físico, use o IP LAN do computador, não `localhost`.
+2. No PowerShell:
 
----
-
-### 2. Executar o Aplicativo Mobile
-
-Abra um novo terminal (Git Bash ou Terminal) e navegue até a pasta:
-
-```bash
-cd GS-MOBILE
-```
-
-Instale as dependências:
-
-```bash
+```powershell
+Set-Location ".\mobile"
 npm install
+npx expo install --check
+npx expo start --clear
 ```
 
-Inicie o projeto:
+Abra o projeto pelo Expo Go no aparelho ou emulador compatível.
 
-```bash
-npm start
-```
+## Documentação complementar
 
----
-
-## ⚠️ Observação Importante
-
-O arquivo de configuração da API está utilizando:
-
-```javascript
-baseURL: "http://localhost:8083"
-```
-
-Portanto, a API Java deve estar em execução localmente na porta 8083 antes de iniciar o aplicativo.
-
----
-
-## 📌 Global Solution
-
-Projeto desenvolvido para a disciplina Mobile Application Development, integrando React Native com API Java Spring Boot para gerenciamento de sensores ambientais.
+- Backend e endpoints: [API/README.md](API/README.md)
+- CRUD de ocorrências: [API/docs/Ocorrencias.md](API/docs/Ocorrencias.md)
+- Testes e execução mobile da Etapa 9: [mobile/ETAPA9.md](mobile/ETAPA9.md)
