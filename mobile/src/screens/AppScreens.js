@@ -3,6 +3,7 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  Alert,
 } from 'react-native';
 
 import AppScreen from '../components/AppScreen';
@@ -276,6 +277,18 @@ export function ReadingsScreen() {
 export function ProfileScreen({ navigation, onLogout, user }) {
   const isManager = String(user?.perfil || '').toUpperCase() === 'GESTOR';
 
+  async function handleLogout() {
+    try {
+      await onLogout();
+    } catch (error) {
+      console.error('Erro ao encerrar sessão:', error);
+      Alert.alert(
+        'Não foi possível sair',
+        'O armazenamento seguro não confirmou a remoção da sessão. Tente novamente.',
+      );
+    }
+  }
+
   return (
     <AppScreen
       title="Meu perfil"
@@ -334,7 +347,7 @@ export function ProfileScreen({ navigation, onLogout, user }) {
 
       <TouchableOpacity
         style={styles.logoutButton}
-        onPress={onLogout}
+        onPress={handleLogout}
       >
         <Text style={styles.logoutText}>
           Sair da conta

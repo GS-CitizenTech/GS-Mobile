@@ -6,6 +6,7 @@ import {
 } from '../config/apiConfig';
 
 import tokenStorage from './tokenStorage';
+import { notifyUnauthorized } from './sessionEvents';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -33,7 +34,17 @@ api.interceptors.request.use(
 // Centraliza o tratamento de erros das respostas.
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    if (error.response?.status === 401) {
+      try {
+        await tokenStorage.removeSession();
+      } catch (storageError) {
+        console.error('Não foi possível limpar a sessão expirada:', storageError);
+      }
+
+      notifyUnauthorized();
+    }
+
     if (error.response) {
       console.error(
         'Erro HTTP:',

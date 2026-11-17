@@ -26,13 +26,32 @@ export async function login({ email, senha }) {
     throw new Error('A API não retornou um token de autenticação válido.');
   }
 
-  await tokenStorage.setToken(accessToken);
+  const user = normalizeUser(response.data);
+  const expiraEm = response.data?.expiraEm ?? response.data?.ExpiraEm ?? null;
 
-  return {
+  const session = {
     accessToken,
     tokenType: response.data?.tokenType ?? response.data?.TokenType ?? 'Bearer',
-    expiraEm: response.data?.expiraEm ?? response.data?.ExpiraEm ?? null,
-    user: normalizeUser(response.data),
+    expiresAt: expiraEm,
+    user,
+  };
+
+  await tokenStorage.setSession(session);
+
+  return session;
+}
+
+export async function restoreSession() {
+  const session = await tokenStorage.getSession();
+
+  if (!session) {
+    return null;
+  }
+
+  // Revalida os dados do usuário normalizados antes de restaurar a navegação.
+  return {
+    ...session,
+    user: normalizeUser(session.user),
   };
 }
 
@@ -49,5 +68,5 @@ export async function registerCitizen({ nome, email, senha, telefone }) {
 }
 
 export async function logout() {
-  await tokenStorage.removeToken();
+  await tokenStorage.removeSession();
 }
