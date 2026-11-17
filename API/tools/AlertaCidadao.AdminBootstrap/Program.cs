@@ -72,7 +72,9 @@ try
 
     try
     {
-        email = new MailAddress(emailInformado).Address.ToLowerInvariant();
+        email = new MailAddress(emailInformado)
+            .Address
+            .ToLowerInvariant();
     }
     catch (FormatException)
     {
@@ -90,7 +92,9 @@ try
     var telefone = Console.ReadLine()?.Trim();
 
     if (string.IsNullOrWhiteSpace(telefone))
+    {
         telefone = null;
+    }
 
     if (telefone?.Length > 20)
     {
@@ -112,7 +116,10 @@ try
         return 1;
     }
 
-    if (!string.Equals(senha, confirmacaoSenha, StringComparison.Ordinal))
+    if (!string.Equals(
+        senha,
+        confirmacaoSenha,
+        StringComparison.Ordinal))
     {
         Console.WriteLine("ERRO: As senhas não coincidem.");
         return 1;
@@ -133,10 +140,15 @@ try
     await dbContext.Database.ExecuteSqlRawAsync(
         "LOCK TABLE USUARIO IN EXCLUSIVE MODE");
 
-    // 6. Verificar gestores ativos e inativos.
-    var gestorExiste = await dbContext.Usuarios
+    // 6. Verificar se já existe algum gestor,
+    // incluindo usuários inativos.
+    var gestorExistente = await dbContext.Usuarios
         .AsNoTracking()
-        .AnyAsync(usuario => usuario.Perfil == "GESTOR");
+        .Where(usuario => usuario.Perfil.ToUpper() == "GESTOR")
+        .Select(usuario => usuario.IdUsuario)
+        .FirstOrDefaultAsync();
+
+    var gestorExiste = gestorExistente != 0;
 
     if (gestorExiste)
     {
@@ -150,9 +162,14 @@ try
     }
 
     // 7. Verificar duplicidade de e-mail.
-    var emailExiste = await dbContext.Usuarios
+    // A consulta retorna o ID em vez de um resultado booleano.
+    var emailExistente = await dbContext.Usuarios
         .AsNoTracking()
-        .AnyAsync(usuario => usuario.Email == email);
+        .Where(usuario => usuario.Email == email)
+        .Select(usuario => usuario.IdUsuario)
+        .FirstOrDefaultAsync();
+
+    var emailExiste = emailExistente != 0;
 
     if (emailExiste)
     {
@@ -194,7 +211,16 @@ catch (Exception ex)
 {
     Console.WriteLine();
     Console.WriteLine("ERRO DURANTE O PROVISIONAMENTO.");
-    Console.WriteLine($"Detalhes: {ex.Message}");
+    Console.WriteLine("Detalhes completos:");
+
+    Console.WriteLine(ex);
+
+    if (ex.InnerException != null)
+    {
+        Console.WriteLine();
+        Console.WriteLine("ERRO INTERNO:");
+        Console.WriteLine(ex.InnerException);
+    }
 
     return 1;
 }
@@ -218,13 +244,17 @@ static string LerSenha(string mensagem)
         if (tecla.Key == ConsoleKey.Backspace)
         {
             if (senha.Length > 0)
+            {
                 senha.Length--;
+            }
 
             continue;
         }
 
         if (!char.IsControl(tecla.KeyChar))
+        {
             senha.Append(tecla.KeyChar);
+        }
     }
 
     return senha.ToString();
