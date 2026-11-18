@@ -469,6 +469,64 @@ namespace AlertaCidadao.Infrastructure.Persistence.Migrations
                     b.Navigation("Ocorrencias");
                 });
 
+            modelBuilder.Entity("AlertaCidadao.Domain.Entities.SolicitacaoGestor", b =>
+                {
+                    b.Property<long>("IdSolicitacaoGestor")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("NUMBER(20,0)")
+                        .HasColumnName("ID_SOLICITACAO_GESTOR");
+
+                    OraclePropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("IdSolicitacaoGestor"));
+
+                    b.Property<DateTimeOffset?>("DataDecisao")
+                        .HasColumnType("TIMESTAMP WITH TIME ZONE")
+                        .HasColumnName("DATA_DECISAO");
+
+                    b.Property<DateTimeOffset>("DataSolicitacao")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TIMESTAMP WITH TIME ZONE")
+                        .HasDefaultValueSql("SYSTIMESTAMP")
+                        .HasColumnName("DATA_SOLICITACAO");
+
+                    b.Property<long?>("IdGestorResponsavel")
+                        .HasColumnType("NUMBER(20,0)")
+                        .HasColumnName("ID_GESTOR_RESPONSAVEL");
+
+                    b.Property<long>("IdUsuario")
+                        .HasColumnType("NUMBER(20,0)")
+                        .HasColumnName("ID_USUARIO");
+
+                    b.Property<string>("Motivo")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("NVARCHAR2(500)")
+                        .HasColumnName("MOTIVO");
+
+                    b.Property<string>("ObservacaoDecisao")
+                        .HasMaxLength(500)
+                        .HasColumnType("NVARCHAR2(500)")
+                        .HasColumnName("OBSERVACAO_DECISAO");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("NVARCHAR2(20)")
+                        .HasDefaultValue("PENDENTE")
+                        .HasColumnName("STATUS");
+
+                    b.HasKey("IdSolicitacaoGestor")
+                        .HasName("PK_SOLICITACAO_GESTOR");
+
+                    b.HasIndex("IdUsuario", "Status")
+                        .HasDatabaseName("IX_SOL_GESTOR_USUARIO_STATUS");
+
+                    b.HasIndex("Status", "DataSolicitacao")
+                        .HasDatabaseName("IX_SOL_GESTOR_STATUS_DATA");
+
+                    b.ToTable("SOLICITACAO_GESTOR", (string)null);
+                });
+
             modelBuilder.Entity("AlertaCidadao.Domain.Entities.Usuario", b =>
                 {
                     b.Navigation("Ocorrencias");
@@ -491,6 +549,22 @@ namespace AlertaCidadao.Infrastructure.Persistence.Migrations
 
                     b.Navigation("Ponto");
                     b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("AlertaCidadao.Domain.Entities.SolicitacaoGestor", b =>
+                {
+                    b.HasOne("AlertaCidadao.Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("IdGestorResponsavel")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_SOL_GESTOR_RESPONSAVEL");
+
+                    b.HasOne("AlertaCidadao.Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("IdUsuario")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_SOL_GESTOR_USUARIO");
                 });
 
 #pragma warning restore 612, 618

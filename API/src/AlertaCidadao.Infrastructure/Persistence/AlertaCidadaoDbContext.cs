@@ -26,6 +26,8 @@ public class AlertaCidadaoDbContext : DbContext
 
     public DbSet<Ocorrencia> Ocorrencias => Set<Ocorrencia>();
 
+    public DbSet<SolicitacaoGestor> SolicitacoesGestor => Set<SolicitacaoGestor>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -36,6 +38,7 @@ public class AlertaCidadaoDbContext : DbContext
         ConfigurarAlerta(modelBuilder);
         ConfigurarIdempotencia(modelBuilder);
         ConfigurarOcorrencia(modelBuilder);
+        ConfigurarSolicitacaoGestor(modelBuilder);
     }
 
     private static void ConfigurarUsuario(ModelBuilder modelBuilder)
@@ -426,6 +429,27 @@ public class AlertaCidadaoDbContext : DbContext
 
             entity.HasIndex(x => x.DataExpiracao)
                 .HasDatabaseName("IX_IDEMPOTENCIA_EXPIRA");
+        });
+    }
+
+    private static void ConfigurarSolicitacaoGestor(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<SolicitacaoGestor>(entity =>
+        {
+            entity.ToTable("SOLICITACAO_GESTOR");
+            entity.HasKey(x => x.IdSolicitacaoGestor).HasName("PK_SOLICITACAO_GESTOR");
+            entity.Property(x => x.IdSolicitacaoGestor).HasColumnName("ID_SOLICITACAO_GESTOR").HasColumnType("NUMBER(20,0)").ValueGeneratedOnAdd();
+            entity.Property(x => x.IdUsuario).HasColumnName("ID_USUARIO").HasColumnType("NUMBER(20,0)").IsRequired();
+            entity.Property(x => x.Motivo).HasColumnName("MOTIVO").HasMaxLength(500).IsRequired();
+            entity.Property(x => x.Status).HasColumnName("STATUS").HasMaxLength(20).HasDefaultValue("PENDENTE").IsRequired();
+            entity.Property(x => x.DataSolicitacao).HasColumnName("DATA_SOLICITACAO").HasColumnType("TIMESTAMP WITH TIME ZONE").HasDefaultValueSql("SYSTIMESTAMP");
+            entity.Property(x => x.DataDecisao).HasColumnName("DATA_DECISAO").HasColumnType("TIMESTAMP WITH TIME ZONE");
+            entity.Property(x => x.IdGestorResponsavel).HasColumnName("ID_GESTOR_RESPONSAVEL").HasColumnType("NUMBER(20,0)");
+            entity.Property(x => x.ObservacaoDecisao).HasColumnName("OBSERVACAO_DECISAO").HasMaxLength(500);
+            entity.HasIndex(x => new { x.IdUsuario, x.Status }).HasDatabaseName("IX_SOL_GESTOR_USUARIO_STATUS");
+            entity.HasIndex(x => new { x.Status, x.DataSolicitacao }).HasDatabaseName("IX_SOL_GESTOR_STATUS_DATA");
+            entity.HasOne<Usuario>().WithMany().HasForeignKey(x => x.IdUsuario).HasConstraintName("FK_SOL_GESTOR_USUARIO").OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<Usuario>().WithMany().HasForeignKey(x => x.IdGestorResponsavel).HasConstraintName("FK_SOL_GESTOR_RESPONSAVEL").OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

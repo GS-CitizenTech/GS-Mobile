@@ -18,9 +18,10 @@ public static class PontoMonitoramentoEndpoints
 
         grupo.MapGet("/todos", async Task<IResult> (IPontoMonitoramentoService service, CancellationToken ct) =>
             Results.Ok(await service.ListarTodosAsync(ct)))
+            .RequireAuthorization("Gestor")
             .WithName("ListarTodosPontosMonitoramento")
             .WithSummary("Lista todos os pontos de monitoramento.")
-            .WithDescription("Retorna pontos ativos e desativados, ordenados pelo nome.")
+            .WithDescription("Retorna pontos ativos e desativados, ordenados pelo nome. A consulta é exclusiva de gestores autenticados.")
             .Produces<IReadOnlyList<PontoMonitoramentoDto>>(StatusCodes.Status200OK);
 
         grupo.MapGet("/{id:long}", async Task<IResult> (long id, IPontoMonitoramentoService service, CancellationToken ct) =>

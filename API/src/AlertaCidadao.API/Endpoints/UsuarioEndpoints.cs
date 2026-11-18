@@ -92,6 +92,47 @@ public static class UsuarioEndpoints
         .Produces<ApiErrorResponse>(StatusCodes.Status409Conflict)
         .Produces(StatusCodes.Status429TooManyRequests);
 
+        // Cadastro de gestores: somente um gestor autenticado pode criar outro gestor.
+        grupo.MapPost("/gestores", async Task<IResult> (
+            CriarUsuarioRequest request,
+            IUsuarioRepository repository,
+            IPasswordHasher passwordHasher,
+            CancellationToken ct) =>
+        {
+            var validacao = ValidacaoRequest.Validar(request);
+            if (validacao is not null) return Results.BadRequest(validacao);
+
+            var email = request.Email.Trim().ToLowerInvariant();
+            if (await repository.EmailExisteAsync(email, null, ct))
+            {
+                return Results.Conflict(new ApiErrorResponse(
+                    "CONFLITO", "Este e-mail já está cadastrado.", null, DateTimeOffset.UtcNow));
+            }
+
+            var gestor = new AlertaCidadao.Domain.Entities.Usuario
+            {
+                Nome = request.Nome.Trim(),
+                Email = email,
+                Telefone = string.IsNullOrWhiteSpace(request.Telefone) ? null : request.Telefone.Trim(),
+                SenhaHash = passwordHasher.GerarHash(request.Senha),
+                Perfil = "GESTOR",
+                Ativo = true,
+                DataCadastro = DateTimeOffset.UtcNow
+            };
+
+            await repository.AdicionarAsync(gestor, ct);
+            var dto = new UsuarioDto(gestor.IdUsuario, gestor.Nome, gestor.Email, gestor.Telefone, gestor.Perfil, gestor.Ativo, gestor.DataCadastro);
+            return Results.Created($"/api/usuarios/{gestor.IdUsuario}", dto);
+        })
+        .AddEndpointFilter<IdempotencyEndpointFilter>()
+        .RequireAuthorization("Gestor")
+        .WithName("CriarGestor")
+        .WithSummary("Cadastra outro gestor a partir de uma conta gestora autenticada.")
+        .WithDescription("Apenas um gestor autenticado pode criar outro usuário com perfil GESTOR.")
+        .Produces<UsuarioDto>(StatusCodes.Status201Created)
+        .Produces<ApiErrorResponse>(StatusCodes.Status400BadRequest)
+        .Produces<ApiErrorResponse>(StatusCodes.Status409Conflict);
+
         // Listagem: acesso exclusivo ao perfil GESTOR.
         grupo.MapGet("/", async Task<IResult> (
             IUsuarioService service,

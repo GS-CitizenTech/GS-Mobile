@@ -11,6 +11,7 @@ public static class DependencyInjection
         services.AddScoped<IAlertaService, AlertaService>();
         services.AddScoped<IRequisicaoIdempotenciaService, RequisicaoIdempotenciaService>();
         services.AddScoped<IOcorrenciaService, OcorrenciaService>();
+        services.AddScoped<ISolicitacaoGestorService, SolicitacaoGestorService>();
         services.AddScoped<IPasswordHasher, Pbkdf2PasswordHasher>();
         return services;
     }

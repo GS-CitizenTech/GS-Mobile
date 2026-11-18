@@ -15,6 +15,10 @@ import {
 } from '../screens/AppScreens';
 import ManagerRegisterScreen from '../screens/ManagerRegisterScreen';
 import UserManagementScreen from '../screens/UserManagementScreen';
+import ManagerDashboardScreen from '../screens/ManagerDashboardScreen';
+import ManagerRequestsScreen from '../screens/ManagerRequestsScreen';
+import ManagerRequestStatusScreen from '../screens/ManagerRequestStatusScreen';
+import { ManagerPointsScreen, ManagerReadingsScreen, ManagerAlertsScreen } from '../screens/ManagerDataScreens';
 import {
   OccurrencesScreen,
   OccurrenceFormScreen,
@@ -31,6 +35,7 @@ const tabIcons = {
   Pontos: '⌖',
   Leituras: '≋',
   'Ocorrências': '▤',
+  Gestão: '⚙',
   Perfil: '●',
 };
 
@@ -125,6 +130,19 @@ function MainTabs({ user, onLogout }) {
         {(props) => <OccurrencesScreen {...props} user={user} />}
       </Tab.Screen>
 
+      {String(user?.perfil || '').toUpperCase() === 'GESTOR' ? (
+        <Tab.Screen
+          name="Gestão"
+          options={{
+            title: 'Painel do gestor',
+            tabBarLabel: 'Gestão',
+            tabBarIcon: ({ focused }) => <TabIcon routeName="Gestão" focused={focused} />,
+          }}
+        >
+          {(props) => <ManagerDashboardScreen {...props} user={user} />}
+        </Tab.Screen>
+      ) : null}
+
       <Tab.Screen
         name="Perfil"
         options={{
@@ -208,6 +226,12 @@ export default function AppNavigator({ user, onLogout }) {
         options={{ title: 'Sobre o aplicativo' }}
       />
 
+      <Stack.Screen
+        name="ManagerRequestStatus"
+        component={ManagerRequestStatusScreen}
+        options={{ title: 'Acesso de gestor' }}
+      />
+
       {isManager ? (
         <>
           <Stack.Screen
@@ -221,6 +245,10 @@ export default function AppNavigator({ user, onLogout }) {
           >
             {(props) => <UserManagementScreen {...props} user={user} />}
           </Stack.Screen>
+          <Stack.Screen name="ManagerRequests" component={ManagerRequestsScreen} options={{ title: 'Solicitações de gestor' }} />
+          <Stack.Screen name="ManagePoints" component={ManagerPointsScreen} options={{ title: 'Gerenciar pontos' }} />
+          <Stack.Screen name="ManageReadings" component={ManagerReadingsScreen} options={{ title: 'Gerenciar leituras' }} />
+          <Stack.Screen name="ManageAlerts" component={ManagerAlertsScreen} options={{ title: 'Gerenciar alertas' }} />
         </>
       ) : null}
     </Stack.Navigator>

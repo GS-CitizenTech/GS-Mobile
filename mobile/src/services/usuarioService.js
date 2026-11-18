@@ -52,3 +52,30 @@ export async function registerManager({ nome, email, senha, telefone }) {
     throw error;
   }
 }
+
+export async function solicitarAcessoGestor({ motivo }) {
+  const response = await api.post(`${API_ENDPOINTS.usuarios}/solicitacoes-gestor`, {
+    motivo: String(motivo || '').trim(),
+  });
+  return response.data;
+}
+
+export async function obterMinhaSolicitacaoGestor() {
+  const response = await api.get(`${API_ENDPOINTS.usuarios}/solicitacoes-gestor/minha`);
+  return response.data;
+}
+
+export async function listarSolicitacoesGestor(status = 'PENDENTE') {
+  const response = await api.get(`${API_ENDPOINTS.usuarios}/solicitacoes-gestor`, {
+    params: status ? { status } : undefined,
+  });
+  return Array.isArray(response.data) ? response.data : [];
+}
+
+export async function decidirSolicitacaoGestor(id, { status, observacao = '' }) {
+  const response = await api.put(`${API_ENDPOINTS.usuarios}/solicitacoes-gestor/${id}`, {
+    status,
+    observacao: observacao.trim() || null,
+  });
+  return response.data;
+}

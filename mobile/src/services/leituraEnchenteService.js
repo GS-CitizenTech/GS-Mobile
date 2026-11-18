@@ -30,3 +30,29 @@ export async function obterLeituraEnchentePorId(id) {
   const response = await api.get(`${API_ENDPOINTS.leiturasEnchente}/${id}`);
   return response.data;
 }
+
+export async function criarLeituraEnchente(dados) {
+  const response = await api.post(API_ENDPOINTS.leiturasEnchente, prepararLeitura(dados, true));
+  return response.data;
+}
+
+export async function atualizarLeituraEnchente(id, dados) {
+  const response = await api.put(`${API_ENDPOINTS.leiturasEnchente}/${id}`, prepararLeitura(dados, false));
+  return response.data;
+}
+
+export async function excluirLeituraEnchente(id) {
+  await api.delete(`${API_ENDPOINTS.leiturasEnchente}/${id}`);
+}
+
+function prepararLeitura(dados, incluirPonto) {
+  return {
+    ...(incluirPonto ? { idPonto: Number(dados.idPonto) } : {}),
+    nivelAguaCm: Number(dados.nivelAguaCm),
+    chuvaMm: Number(dados.chuvaMm),
+    elevacaoCmH: Number(dados.elevacaoCmH),
+    dataHoraLeitura: new Date(dados.dataHoraLeitura).toISOString(),
+    origem: String(dados.origem || 'MANUAL').trim().toUpperCase(),
+    ...(incluirPonto ? { chaveEvento: String(dados.chaveEvento || '').trim() || null } : {}),
+  };
+}

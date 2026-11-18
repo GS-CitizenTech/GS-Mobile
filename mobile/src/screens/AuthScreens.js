@@ -11,7 +11,8 @@ import {
 
 import AppScreen from '../components/AppScreen';
 import colors from '../theme/colors';
-import { login, registerCitizen } from '../services/authService';
+import { login, logout, registerCitizen } from '../services/authService';
+import { solicitarAcessoGestor } from '../services/usuarioService';
 import { getApiErrorMessage } from '../services/apiError';
 
 function FormError({ message }) {
@@ -144,6 +145,8 @@ export function RegisterScreen({ navigation }) {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [accountType, setAccountType] = useState('CIDADAO');
+  const [managerReason, setManagerReason] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -175,6 +178,11 @@ export function RegisterScreen({ navigation }) {
       return;
     }
 
+    if (accountType === 'GESTOR' && managerReason.trim().length < 10) {
+      setErrorMessage('Explique em pelo menos 10 caracteres por que precisa do acesso de gestor.');
+      return;
+    }
+
     try {
       setLoading(true);
       await registerCitizen({
@@ -184,12 +192,34 @@ export function RegisterScreen({ navigation }) {
         telefone: phone,
       });
 
-      Alert.alert(
-        'Conta criada',
-        'Seu cadastro de cidadão foi realizado. Entre com seu e-mail e sua senha.',
-        [{ text: 'Ir para login', onPress: () => navigation.replace('Login') }],
-        { cancelable: false },
-      );
+      if (accountType === 'GESTOR') {
+        try {
+          await login({ email, senha: password });
+          await solicitarAcessoGestor({ motivo: managerReason });
+          await logout();
+          Alert.alert(
+            'Solicitação enviada',
+            'Sua conta foi criada e a solicitação de acesso de gestor foi enviada. Um gestor atual precisa aprovar o pedido. Até a aprovação, sua conta funciona como cidadão.',
+            [{ text: 'Ir para login', onPress: () => navigation.replace('Login') }],
+            { cancelable: false },
+          );
+        } catch (requestError) {
+          try { await logout(); } catch (storageError) { console.warn('Não foi possível limpar a sessão temporária.', storageError); }
+          Alert.alert(
+            'Conta criada',
+            `Sua conta foi criada como cidadão, mas o pedido de gestor não foi enviado: ${getApiErrorMessage(requestError)}. Entre normalmente e acesse Perfil > Consultar / solicitar acesso de gestor para tentar novamente.`,
+            [{ text: 'Ir para login', onPress: () => navigation.replace('Login') }],
+            { cancelable: false },
+          );
+        }
+      } else {
+        Alert.alert(
+          'Conta criada',
+          'Seu cadastro de cidadão foi realizado. Entre com seu e-mail e sua senha.',
+          [{ text: 'Ir para login', onPress: () => navigation.replace('Login') }],
+          { cancelable: false },
+        );
+      }
     } catch (error) {
       setErrorMessage(getApiErrorMessage(error));
     } finally {
@@ -204,6 +234,44 @@ export function RegisterScreen({ navigation }) {
     >
       <View style={styles.card}>
         <Text style={styles.heading}>Seus dados</Text>
+
+        <Text style={styles.label}>Tipo de cadastro</Text>
+        <View style={styles.accountTypeRow}>
+          <TouchableOpacity
+            style={[styles.accountTypeOption, accountType === 'CIDADAO' && styles.accountTypeOptionSelected]}
+            onPress={() => { setAccountType('CIDADAO'); setErrorMessage(''); }}
+            disabled={loading}
+          >
+            <Text style={[styles.accountTypeTitle, accountType === 'CIDADAO' && styles.accountTypeTitleSelected]}>Cadastrar como cidadão</Text>
+            <Text style={styles.accountTypeDescription}>Acesso às informações e registro de ocorrências.</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.accountTypeOption, accountType === 'GESTOR' && styles.accountTypeOptionSelected]}
+            onPress={() => { setAccountType('GESTOR'); setErrorMessage(''); }}
+            disabled={loading}
+          >
+            <Text style={[styles.accountTypeTitle, accountType === 'GESTOR' && styles.accountTypeTitleSelected]}>Cadastrar como gestor</Text>
+            <Text style={styles.accountTypeDescription}>Solicite acesso administrativo, sujeito à aprovação.</Text>
+          </TouchableOpacity>
+        </View>
+
+        {accountType === 'GESTOR' ? (
+          <View style={styles.managerNotice}>
+            <Text style={styles.managerNoticeText}>Por segurança, a escolha não concede privilégios automaticamente. Sua conta será criada como cidadão até que um gestor atual aprove a solicitação.</Text>
+            <Text style={styles.label}>Por que você precisa de acesso de gestor? *</Text>
+            <TextInput
+              style={[styles.input, styles.managerReasonInput]}
+              placeholder="Descreva sua função e a necessidade de acesso administrativo"
+              placeholderTextColor={colors.disabled}
+              value={managerReason}
+              onChangeText={setManagerReason}
+              multiline
+              maxLength={500}
+              editable={!loading}
+              textAlignVertical="top"
+            />
+          </View>
+        ) : null}
 
         <Text style={styles.label}>Nome completo *</Text>
         <TextInput
@@ -275,7 +343,7 @@ export function RegisterScreen({ navigation }) {
           {loading ? (
             <ActivityIndicator color={colors.textLight} />
           ) : (
-            <Text style={styles.primaryButtonText}>Criar minha conta</Text>
+            <Text style={styles.primaryButtonText}>{accountType === 'GESTOR' ? 'Criar conta e solicitar acesso' : 'Criar minha conta'}</Text>
           )}
         </TouchableOpacity>
 
@@ -382,4 +450,25 @@ const styles = StyleSheet.create({
     marginTop: 25,
     fontSize: 12,
   },
+  accountTypeRow: {
+    gap: 9,
+    marginBottom: 18,
+  },
+  accountTypeOption: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 11,
+    padding: 13,
+    backgroundColor: colors.surface,
+  },
+  accountTypeOptionSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight,
+  },
+  accountTypeTitle: { color: colors.text, fontWeight: '700', fontSize: 13 },
+  accountTypeTitleSelected: { color: colors.primaryDark },
+  accountTypeDescription: { color: colors.textSecondary, fontSize: 11, marginTop: 5, lineHeight: 16 },
+  managerNotice: { backgroundColor: colors.primaryLight, padding: 12, borderRadius: 10, marginBottom: 16 },
+  managerNoticeText: { color: colors.primaryDark, fontSize: 12, lineHeight: 18, marginBottom: 12 },
+  managerReasonInput: { minHeight: 90, paddingTop: 12, marginBottom: 0 },
 });

@@ -1109,6 +1109,12 @@ export function ProfileScreen({ navigation, onLogout, user }) {
           <Text style={styles.adminHeading}>Administração</Text>
           <TouchableOpacity
             style={styles.secondaryButton}
+            onPress={() => navigation.navigate('Gestão')}
+          >
+            <Text style={styles.secondaryButtonText}>Abrir painel do gestor</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.secondaryButton}
             onPress={() => navigation.navigate('UsersManagement')}
           >
             <Text style={styles.secondaryButtonText}>Gerenciar usuários</Text>
@@ -1120,7 +1126,17 @@ export function ProfileScreen({ navigation, onLogout, user }) {
             <Text style={styles.secondaryButtonText}>Cadastrar novo gestor</Text>
           </TouchableOpacity>
         </View>
-      ) : null}
+      ) : (
+        <View style={styles.adminSection}>
+          <Text style={styles.adminHeading}>Acesso administrativo</Text>
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => navigation.navigate('ManagerRequestStatus')}
+          >
+            <Text style={styles.secondaryButtonText}>Consultar / solicitar acesso de gestor</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <TouchableOpacity
         style={styles.secondaryButton}

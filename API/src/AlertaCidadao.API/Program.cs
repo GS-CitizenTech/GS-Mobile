@@ -142,6 +142,7 @@ app.MapGet("/", () => Results.Ok(new
 
 app.MapPontoMonitoramentoEndpoints();
 app.MapUsuarioEndpoints();
+app.MapSolicitacaoGestorEndpoints();
 app.MapLeituraEnchenteEndpoints();
 app.MapAlertaEndpoints();
 app.MapRequisicaoIdempotenciaEndpoints();
