@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'http://192.168.0.105:5075';
+export const API_BASE_URL = 'http://localhost:5075';
 
 export const API_TIMEOUT = 15000;
 
