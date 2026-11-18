@@ -33,21 +33,47 @@ public sealed class OracleExceptionMiddleware
         }
         catch (DbUpdateException exception)
         {
-            _logger.LogError("Falha de persistência Oracle. TraceId: {TraceId}", context.TraceIdentifier);
+            // Registra a exceção completa no log do servidor para preservar
+            // o ORA-xxxxx e o nome da coluna/tabela envolvidos. A resposta
+            // enviada ao aplicativo continua sem detalhes internos.
+            _logger.LogError(
+                exception,
+                "Falha de persistência Oracle. TraceId: {TraceId}. Método: {Method}. Rota: {Path}",
+                context.TraceIdentifier,
+                context.Request.Method,
+                context.Request.Path);
             await EscreverErroOracleAsync(context, exception);
         }
         catch (DbException exception)
         {
-            _logger.LogError("Falha de consulta Oracle. TraceId: {TraceId}", context.TraceIdentifier);
+            _logger.LogError(
+                exception,
+                "Falha de consulta Oracle. TraceId: {TraceId}. Método: {Method}. Rota: {Path}",
+                context.TraceIdentifier,
+                context.Request.Method,
+                context.Request.Path);
             await EscreverErroOracleAsync(context, exception);
         }
         catch (Exception exception)
         {
-            _logger.LogError("Erro não tratado na API. TraceId: {TraceId}. Tipo: {Tipo}",
-                context.TraceIdentifier, exception.GetType().Name);
+            _logger.LogError(
+                exception,
+                "Erro não tratado na API. TraceId: {TraceId}. Método: {Method}. Rota: {Path}",
+                context.TraceIdentifier,
+                context.Request.Method,
+                context.Request.Path);
 
             if (context.Response.HasStarted)
                 throw;
+
+            // Algumas exceções do EF Core podem encapsular a OracleException
+            // em outro tipo. Ainda assim, devolvemos o código Oracle quando ele
+            // estiver presente em qualquer nível da cadeia de exceções.
+            if (CodigoOracleRegex.IsMatch(exception.ToString()))
+            {
+                await EscreverErroOracleAsync(context, exception);
+                return;
+            }
 
             context.Response.Clear();
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
@@ -106,6 +132,8 @@ public sealed class OracleExceptionMiddleware
                 "Um valor numérico excede a precisão permitida."),
             "ORA-02290" => (StatusCodes.Status400BadRequest,
                 "Um dos valores não atende às regras de integridade do banco."),
+            "ORA-00904" => (StatusCodes.Status500InternalServerError,
+                "A estrutura do banco Oracle não corresponde à versão da API: uma coluna esperada não foi encontrada. Execute o diagnóstico do schema Oracle do projeto."),
             _ => (StatusCodes.Status500InternalServerError,
                 "O banco de dados não conseguiu concluir a operação. Verifique os dados ou contate o suporte.")
         };

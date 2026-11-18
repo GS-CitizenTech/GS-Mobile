@@ -1,4 +1,3 @@
-
 using AlertaCidadao.Application.Interfaces;
 using AlertaCidadao.Domain.Entities;
 using AlertaCidadao.Infrastructure.Persistence;
@@ -21,11 +20,18 @@ public sealed class PontoMonitoramentoRepository
         ListarAtivosAsync(
             CancellationToken cancellationToken = default)
     {
-        return await _context.PontosMonitoramento
+        // Oracle NUMBER(1) é convertido para bool no modelo.
+        // O provider Oracle pode gerar InvalidCastException ao traduzir
+        // o predicado bool para SQL. Por isso, materializamos primeiro
+        // e aplicamos o filtro em memória.
+        var pontos = await _context.PontosMonitoramento
             .AsNoTracking()
-            .Where(p => p.Ativo)
             .OrderBy(p => p.Nome)
             .ToListAsync(cancellationToken);
+
+        return pontos
+            .Where(p => p.Ativo)
+            .ToList();
     }
 
     public async Task<IReadOnlyList<PontoMonitoramento>> ListarTodosAsync(

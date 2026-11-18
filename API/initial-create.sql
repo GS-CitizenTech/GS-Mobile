@@ -50,6 +50,7 @@ EXECUTE IMMEDIATE 'CREATE TABLE
     "CHAVE_IDEMPOTENCIA" NVARCHAR2(100) NOT NULL,
     "METODO_HTTP" NVARCHAR2(10) NOT NULL,
     "ROTA" NVARCHAR2(250) NOT NULL,
+    "FINGERPRINT_HASH" NVARCHAR2(64),
     "STATUS_HTTP" NUMBER(3),
     "RESPOSTA_JSON" CLOB,
     "DATA_CRIACAO" TIMESTAMP WITH TIME ZONE DEFAULT (SYSTIMESTAMP) NOT NULL,
@@ -165,6 +166,14 @@ INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
 VALUES (N'20261110211026_InitialCreate', N'9.0.0')
 /
 
+
+INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+VALUES (N'20261110220000_AlignStatusHttpType', N'9.0.0')
+/
+
+INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+VALUES (N'20261111220000_AddIdempotencyFingerprint', N'9.0.0')
+/
 
 INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
 VALUES (N'20261117140000_AddOcorrencia', N'9.0.0')
