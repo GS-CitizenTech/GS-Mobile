@@ -155,8 +155,7 @@ public sealed class UsuarioService(
                     TipoErroOperacao.Conflito, "Não é permitido excluir o último gestor responsável pelo sistema.");
         }
 
-        // A exclusão física remove o acesso, o hash de senha e os pedidos de gestão associados.
-        // As ocorrências são preservadas e ficam sem vínculo com a conta excluída.
+        // A exclusão física remove a conta, suas ocorrências e solicitações associadas.
         await repository.RemoverAsync(usuario, ct);
         return ResultadoOperacao<bool>.Ok(true);
     }

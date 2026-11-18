@@ -69,9 +69,10 @@ public sealed class UsuarioRepository(AlertaCidadaoDbContext context)
         await using var transaction = await context.Database.BeginTransactionAsync(
             IsolationLevel.ReadCommitted, ct);
 
-        // Preserva os relatos históricos, removendo a referência à conta excluída.
+        // Remove primeiro todas as ocorrências do cidadão para respeitar a FK
+        // OCORRENCIA.ID_USUARIO (NOT NULL) no Oracle. A operação é transacional.
         await context.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE OCORRENCIA SET ID_USUARIO = NULL WHERE ID_USUARIO = {entidade.IdUsuario}", ct);
+            $"DELETE FROM OCORRENCIA WHERE ID_USUARIO = {entidade.IdUsuario}", ct);
 
         // Solicitações contêm dados pessoais do solicitante e referência ao gestor decisor.
         // Elas são removidas quando qualquer uma dessas contas é excluída.
