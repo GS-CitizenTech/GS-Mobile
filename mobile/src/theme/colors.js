@@ -1,33 +1,25 @@
 const colors = {
-  primary: '#075985',
-  primaryDark: '#0C4A6E',
-  primaryLight: '#E0F2FE',
-
-  secondary: '#0F766E',
-  secondaryLight: '#CCFBF1',
-
-  background: '#F1F5F9',
+  primary: '#075B78',
+  primaryDark: '#06445C',
+  primaryLight: '#E2F3F7',
+  secondary: '#087E8B',
+  secondaryLight: '#DDF3F1',
+  background: '#F3F7FA',
   surface: '#FFFFFF',
-
-  text: '#0F172A',
-  textSecondary: '#64748B',
+  surfaceMuted: '#F8FAFC',
+  text: '#102A43',
+  textSecondary: '#526779',
   textLight: '#FFFFFF',
-
-  border: '#E2E8F0',
-
-  success: '#15803D',
-  successLight: '#DCFCE7',
-
-  warning: '#B45309',
-  warningLight: '#FEF3C7',
-
-  danger: '#B91C1C',
-  dangerLight: '#FEE2E2',
-
-  critical: '#7F1D1D',
-  criticalLight: '#FECACA',
-
-  disabled: '#94A3B8',
+  border: '#DCE6ED',
+  success: '#16794B',
+  successLight: '#E1F4E9',
+  warning: '#A85B08',
+  warningLight: '#FFF2D8',
+  danger: '#B42332',
+  dangerLight: '#FDE8E9',
+  critical: '#7A1D2B',
+  criticalLight: '#F9DADD',
+  disabled: '#91A2B2',
+  overlay: '#102A4380',
 };
-
 export default colors;

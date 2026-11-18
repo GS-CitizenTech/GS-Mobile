@@ -1,4 +1,5 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Text } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import {
@@ -24,6 +25,31 @@ import colors from '../theme/colors';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
+const tabIcons = {
+  'Início': '⌂',
+  Alertas: '⚠',
+  Pontos: '⌖',
+  Leituras: '≋',
+  'Ocorrências': '▤',
+  Perfil: '●',
+};
+
+function TabIcon({ routeName, focused }) {
+  return (
+    <Text
+      accessibilityElementsHidden
+      style={{
+        color: focused ? colors.primary : colors.textSecondary,
+        fontSize: 21,
+        fontWeight: focused ? '900' : '600',
+        lineHeight: 24,
+      }}
+    >
+      {tabIcons[routeName] || '•'}
+    </Text>
+  );
+}
+
 function MainTabs({ user, onLogout }) {
   return (
     <Tab.Navigator
@@ -31,18 +57,21 @@ function MainTabs({ user, onLogout }) {
       screenOptions={{
         headerStyle: { backgroundColor: colors.surface },
         headerTintColor: colors.primary,
-        headerTitleStyle: { fontWeight: 'bold' },
+        headerTitleStyle: { fontWeight: '800', color: colors.text },
         headerShadowVisible: false,
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          height: 64,
-          paddingBottom: 8,
-          paddingTop: 6,
+          borderTopWidth: 1,
+          height: 72,
+          paddingBottom: 9,
+          paddingTop: 7,
+          elevation: 10,
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '700', marginTop: 2 },
+        tabBarIconStyle: { marginTop: 1 },
       }}
     >
       <Tab.Screen
@@ -51,7 +80,7 @@ function MainTabs({ user, onLogout }) {
         options={{
           title: 'Início',
           tabBarLabel: 'Início',
-          tabBarIcon: () => null,
+          tabBarIcon: ({ focused }) => <TabIcon routeName="Início" focused={focused} />,
         }}
       />
 
@@ -61,7 +90,7 @@ function MainTabs({ user, onLogout }) {
         options={{
           title: 'Alertas',
           tabBarLabel: 'Alertas',
-          tabBarIcon: () => null,
+          tabBarIcon: ({ focused }) => <TabIcon routeName="Alertas" focused={focused} />,
         }}
       />
 
@@ -71,7 +100,7 @@ function MainTabs({ user, onLogout }) {
         options={{
           title: 'Monitoramento',
           tabBarLabel: 'Pontos',
-          tabBarIcon: () => null,
+          tabBarIcon: ({ focused }) => <TabIcon routeName="Pontos" focused={focused} />,
         }}
       />
 
@@ -81,7 +110,7 @@ function MainTabs({ user, onLogout }) {
         options={{
           title: 'Leituras',
           tabBarLabel: 'Leituras',
-          tabBarIcon: () => null,
+          tabBarIcon: ({ focused }) => <TabIcon routeName="Leituras" focused={focused} />,
         }}
       />
 
@@ -90,7 +119,7 @@ function MainTabs({ user, onLogout }) {
         options={{
           title: 'Ocorrências',
           tabBarLabel: 'Ocorrências',
-          tabBarIcon: () => null,
+          tabBarIcon: ({ focused }) => <TabIcon routeName="Ocorrências" focused={focused} />,
         }}
       >
         {(props) => <OccurrencesScreen {...props} user={user} />}
@@ -101,7 +130,7 @@ function MainTabs({ user, onLogout }) {
         options={{
           title: 'Meu perfil',
           tabBarLabel: 'Perfil',
-          tabBarIcon: () => null,
+          tabBarIcon: ({ focused }) => <TabIcon routeName="Perfil" focused={focused} />,
         }}
       >
         {(props) => (
@@ -125,7 +154,7 @@ export default function AppNavigator({ user, onLogout }) {
       screenOptions={{
         headerStyle: { backgroundColor: colors.surface },
         headerTintColor: colors.primary,
-        headerTitleStyle: { fontWeight: 'bold' },
+        headerTitleStyle: { fontWeight: '800', color: colors.text },
         headerShadowVisible: false,
         contentStyle: { backgroundColor: colors.background },
       }}

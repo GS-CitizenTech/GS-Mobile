@@ -8,6 +8,7 @@ import {
   SafeAreaProvider,
 } from 'react-native-safe-area-context';
 
+import { StatusBar } from 'expo-status-bar';
 import RootNavigator from './src/navigation/RootNavigator';
 import { checkApiConnection } from './src/services/connectionService';
 
@@ -44,6 +45,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
+      <StatusBar style="dark" backgroundColor="#F3F7FA" />
       <NavigationContainer>
         <RootNavigator />
       </NavigationContainer>
