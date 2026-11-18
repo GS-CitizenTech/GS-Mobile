@@ -11,6 +11,8 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import AppScreen from '../components/AppScreen';
 import colors from '../theme/colors';
+import { createThemedStyles } from '../theme/themedStyles';
+import { useTheme } from '../theme/ThemeContext';
 import {
   activateUser,
   deactivateUser,
@@ -27,6 +29,7 @@ function formatDate(value) {
 }
 
 export default function UserManagementScreen({ user }) {
+  useTheme();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -195,7 +198,7 @@ export default function UserManagementScreen({ user }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles(() => ({
   refreshButton: { alignSelf: 'flex-start', minHeight: 42, justifyContent: 'center', paddingHorizontal: 14, borderRadius: 9, backgroundColor: colors.primaryLight, marginBottom: 15 },
   refreshText: { color: colors.primaryDark, fontWeight: 'bold' },
   centerState: { alignItems: 'center', padding: 28 },
@@ -224,4 +227,4 @@ const styles = StyleSheet.create({
   deleteButton: { alignSelf: 'flex-start', backgroundColor: colors.danger, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10 },
   deleteText: { color: colors.textLight, fontWeight: 'bold', fontSize: 12 },
   selfNote: { color: colors.warning, fontSize: 11, marginTop: 12 },
-});
+}));

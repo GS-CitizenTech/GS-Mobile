@@ -13,6 +13,8 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import AppScreen from '../components/AppScreen';
 import colors from '../theme/colors';
+import { createThemedStyles } from '../theme/themedStyles';
+import { useTheme } from '../theme/ThemeContext';
 import { getApiErrorMessage } from '../services/apiError';
 import {
   atualizarOcorrencia,
@@ -137,6 +139,7 @@ function ChoiceChips({ items, value, onChange }) {
 }
 
 export function OccurrencesScreen({ navigation, user }) {
+  useTheme();
   const isManager = String(user?.perfil || '').toUpperCase() === 'GESTOR';
   const [items, setItems] = useState([]);
   const [filter, setFilter] = useState('TODAS');
@@ -230,6 +233,7 @@ export function OccurrencesScreen({ navigation, user }) {
 }
 
 export function OccurrenceFormScreen({ navigation, route, user }) {
+  useTheme();
   const occurrence = route.params?.occurrence || null;
   const isEditing = Boolean(occurrence?.idOcorrencia);
   const isManager = String(user?.perfil || '').toUpperCase() === 'GESTOR';
@@ -397,6 +401,7 @@ export function OccurrenceFormScreen({ navigation, route, user }) {
 }
 
 export function OccurrenceDetailsScreen({ navigation, route, user }) {
+  useTheme();
   const id = route.params?.id;
   const isManager = String(user?.perfil || '').toUpperCase() === 'GESTOR';
   const [occurrence, setOccurrence] = useState(route.params?.occurrence || null);
@@ -558,7 +563,7 @@ export function OccurrenceDetailsScreen({ navigation, route, user }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles(() => ({
   primaryButton: { backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16, alignItems: 'center', marginBottom: 14 },
   primaryButtonText: { color: colors.textLight, fontWeight: '700', fontSize: 15 },
   secondaryButton: { backgroundColor: colors.primaryLight, borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 14 },
@@ -621,4 +626,4 @@ const styles = StyleSheet.create({
   detailText: { color: colors.text, fontSize: 14, lineHeight: 21, marginTop: 4 },
   detailDivider: { height: 1, backgroundColor: colors.border, marginTop: 16 },
   noticeText: { color: colors.textSecondary, fontSize: 12, lineHeight: 18, marginTop: 16 },
-});
+}));

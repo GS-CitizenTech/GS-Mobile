@@ -11,6 +11,8 @@ import {
 
 import AppScreen from '../components/AppScreen';
 import colors from '../theme/colors';
+import { createThemedStyles } from '../theme/themedStyles';
+import { useTheme } from '../theme/ThemeContext';
 import { login, logout, registerCitizen } from '../services/authService';
 import { solicitarAcessoGestor } from '../services/usuarioService';
 import { getApiErrorMessage } from '../services/apiError';
@@ -26,6 +28,7 @@ function FormError({ message }) {
 }
 
 export function LoginScreen({ navigation, onAuthenticated }) {
+  useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -140,6 +143,7 @@ export function LoginScreen({ navigation, onAuthenticated }) {
 }
 
 export function RegisterScreen({ navigation }) {
+  useTheme();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -359,7 +363,7 @@ export function RegisterScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles(() => ({
   brand: {
     alignItems: 'center',
     marginBottom: 25,
@@ -471,4 +475,4 @@ const styles = StyleSheet.create({
   managerNotice: { backgroundColor: colors.primaryLight, padding: 12, borderRadius: 10, marginBottom: 16 },
   managerNoticeText: { color: colors.primaryDark, fontSize: 12, lineHeight: 18, marginBottom: 12 },
   managerReasonInput: { minHeight: 90, paddingTop: 12, marginBottom: 0 },
-});
+}));

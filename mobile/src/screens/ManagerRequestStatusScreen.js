@@ -11,6 +11,8 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import AppScreen from '../components/AppScreen';
 import colors from '../theme/colors';
+import { createThemedStyles } from '../theme/themedStyles';
+import { useTheme } from '../theme/ThemeContext';
 import { obterMinhaSolicitacaoGestor, solicitarAcessoGestor } from '../services/usuarioService';
 import { getApiErrorMessage } from '../services/apiError';
 
@@ -21,6 +23,7 @@ const STATUS_LABELS = {
 };
 
 export default function ManagerRequestStatusScreen() {
+  useTheme();
   const [request, setRequest] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [reason, setReason] = useState('');
@@ -144,7 +147,7 @@ export default function ManagerRequestStatusScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles(() => ({
   state: { alignItems: 'center', padding: 24 },
   helper: { color: colors.textSecondary, fontSize: 12, lineHeight: 18, marginTop: 8 },
   card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 14, padding: 17, marginBottom: 12 },
@@ -163,4 +166,4 @@ const styles = StyleSheet.create({
   submitButton: { minHeight: 46, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.primary, borderRadius: 9, marginTop: 13 },
   submitText: { color: colors.textLight, fontWeight: '800', fontSize: 12 },
   error: { color: colors.danger, fontSize: 12, lineHeight: 18, marginTop: 12 },
-});
+}));

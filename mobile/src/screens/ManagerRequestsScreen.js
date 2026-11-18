@@ -11,6 +11,8 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import AppScreen from '../components/AppScreen';
 import colors from '../theme/colors';
+import { createThemedStyles } from '../theme/themedStyles';
+import { useTheme } from '../theme/ThemeContext';
 import { decidirSolicitacaoGestor, listarSolicitacoesGestor } from '../services/usuarioService';
 import { getApiErrorMessage } from '../services/apiError';
 
@@ -21,6 +23,7 @@ function formatDate(value) {
 }
 
 export default function ManagerRequestsScreen() {
+  useTheme();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -110,7 +113,7 @@ export default function ManagerRequestsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles(() => ({
   refreshButton: { alignSelf: 'flex-start', backgroundColor: colors.primaryLight, borderRadius: 9, paddingHorizontal: 13, paddingVertical: 10, marginBottom: 14 },
   refreshText: { color: colors.primaryDark, fontWeight: '800', fontSize: 12 },
   state: { alignItems: 'center', padding: 25 },
@@ -131,4 +134,4 @@ const styles = StyleSheet.create({
   approveText: { color: colors.textLight, fontWeight: '800', fontSize: 12 },
   rejectButton: { flex: 1, minHeight: 43, borderRadius: 9, borderWidth: 1, borderColor: colors.danger, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.dangerLight },
   rejectText: { color: colors.danger, fontWeight: '800', fontSize: 12 },
-});
+}));

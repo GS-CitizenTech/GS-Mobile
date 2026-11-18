@@ -25,6 +25,7 @@ import {
   OccurrenceDetailsScreen,
 } from '../screens/OccurrenceScreens';
 import colors from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -40,6 +41,7 @@ const tabIcons = {
 };
 
 function TabIcon({ routeName, focused }) {
+  useTheme();
   return (
     <Text
       accessibilityElementsHidden
@@ -56,6 +58,7 @@ function TabIcon({ routeName, focused }) {
 }
 
 function MainTabs({ user, onLogout }) {
+  useTheme();
   return (
     <Tab.Navigator
       initialRouteName="Início"
@@ -164,6 +167,7 @@ function MainTabs({ user, onLogout }) {
 }
 
 export default function AppNavigator({ user, onLogout }) {
+  useTheme();
   const isManager = String(user?.perfil || '').toUpperCase() === 'GESTOR';
 
   return (

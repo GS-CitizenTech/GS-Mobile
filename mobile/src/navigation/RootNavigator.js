@@ -11,8 +11,11 @@ import AppNavigator from './AppNavigator';
 import { logout, restoreSession } from '../services/authService';
 import { setUnauthorizedHandler } from '../services/sessionEvents';
 import colors from '../theme/colors';
+import { createThemedStyles } from '../theme/themedStyles';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function RootNavigator() {
+  useTheme();
   const [user, setUser] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
 
@@ -86,7 +89,7 @@ export default function RootNavigator() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles(() => ({
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
@@ -98,4 +101,4 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
   },
-});
+}));

@@ -10,6 +10,8 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import AppScreen from '../components/AppScreen';
 import colors from '../theme/colors';
+import { createThemedStyles } from '../theme/themedStyles';
+import { useTheme } from '../theme/ThemeContext';
 import { listarAlertas } from '../services/alertaService';
 import { listarTodosPontosMonitoramento } from '../services/pontoMonitoramentoService';
 import { listarLeiturasEnchente } from '../services/leituraEnchenteService';
@@ -41,6 +43,7 @@ function ActionCard({ icon, title, description, onPress }) {
 }
 
 export default function ManagerDashboardScreen({ navigation, user }) {
+  useTheme();
   const [metrics, setMetrics] = useState({ alerts: 0, points: 0, readings: 0, occurrences: 0, pending: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -130,7 +133,7 @@ export default function ManagerDashboardScreen({ navigation, user }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles(() => ({
   banner: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: colors.primaryLight, borderRadius: 14, marginBottom: 18 },
   bannerIcon: { fontSize: 30, marginRight: 12 },
   bannerBody: { flex: 1 },
@@ -155,4 +158,4 @@ const styles = StyleSheet.create({
   chevron: { color: colors.primary, fontWeight: '800', fontSize: 24, paddingLeft: 7 },
   warningText: { color: colors.warning, fontSize: 12, lineHeight: 18, marginTop: 10 },
   footerNote: { color: colors.textSecondary, fontSize: 11, lineHeight: 17, marginTop: 14, marginBottom: 8 },
-});
+}));

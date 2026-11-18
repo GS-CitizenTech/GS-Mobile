@@ -13,6 +13,8 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import AppScreen from '../components/AppScreen';
 import colors from '../theme/colors';
+import { createThemedStyles } from '../theme/themedStyles';
+import { useTheme } from '../theme/ThemeContext';
 import { getApiErrorMessage } from '../services/apiError';
 import {
   listarTodosPontosMonitoramento,
@@ -123,6 +125,7 @@ function formatDate(value) {
 }
 
 function ManagerDataScreen({ kind }) {
+  useTheme();
   const config = CONFIG[kind];
   const [items, setItems] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -339,7 +342,7 @@ export function ManagerPointsScreen() { return <ManagerDataScreen kind="points" 
 export function ManagerReadingsScreen() { return <ManagerDataScreen kind="readings" />; }
 export function ManagerAlertsScreen() { return <ManagerDataScreen kind="alerts" />; }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles(() => ({
   topActions: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 12 },
   primaryButton: { backgroundColor: colors.primary, minHeight: 44, borderRadius: 9, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10 },
   primaryButtonText: { color: colors.textLight, fontWeight: '800', fontSize: 12 },
@@ -374,4 +377,4 @@ const styles = StyleSheet.create({
   editText: { color: colors.primaryDark, fontWeight: '800', fontSize: 11 },
   deleteButton: { backgroundColor: colors.dangerLight, borderRadius: 8, paddingHorizontal: 13, paddingVertical: 9 },
   deleteText: { color: colors.danger, fontWeight: '800', fontSize: 11 },
-});
+}));

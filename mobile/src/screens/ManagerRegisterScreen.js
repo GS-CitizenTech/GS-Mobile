@@ -11,10 +11,13 @@ import {
 
 import AppScreen from '../components/AppScreen';
 import colors from '../theme/colors';
+import { createThemedStyles } from '../theme/themedStyles';
+import { useTheme } from '../theme/ThemeContext';
 import { registerManager } from '../services/usuarioService';
 import { getApiErrorMessage } from '../services/apiError';
 
 export default function ManagerRegisterScreen({ navigation }) {
+  useTheme();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -181,7 +184,7 @@ export default function ManagerRegisterScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles(() => ({
   infoCard: {
     backgroundColor: colors.primaryLight,
     borderRadius: 13,
@@ -273,4 +276,4 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '600',
   },
-});
+}));

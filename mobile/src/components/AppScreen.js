@@ -1,8 +1,11 @@
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import colors from '../theme/colors';
+import { createThemedStyles } from '../theme/themedStyles';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function AppScreen({ title, subtitle, children, scroll = true }) {
+  useTheme();
   const content = (
     <>
       <View style={styles.brandRow}>
@@ -40,7 +43,7 @@ export default function AppScreen({ title, subtitle, children, scroll = true }) 
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles(() => ({
   safeArea: { flex: 1, backgroundColor: colors.background },
   content: {
     paddingHorizontal: 20,
@@ -94,4 +97,4 @@ const styles = StyleSheet.create({
     marginTop: 7,
     lineHeight: 21,
   },
-});
+}));

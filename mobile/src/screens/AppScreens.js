@@ -11,6 +11,8 @@ import {
 
 import AppScreen from '../components/AppScreen';
 import colors from '../theme/colors';
+import { createThemedStyles } from '../theme/themedStyles';
+import { useTheme } from '../theme/ThemeContext';
 import { listarAlertas, obterAlertaPorId } from '../services/alertaService';
 import { listarPontosMonitoramento, obterPontoMonitoramentoPorId } from '../services/pontoMonitoramentoService';
 import { listarLeiturasEnchente, obterLeituraEnchentePorId } from '../services/leituraEnchenteService';
@@ -121,6 +123,7 @@ function EmptyState({ message }) {
 }
 
 export function DashboardScreen({ navigation }) {
+  useTheme();
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -209,6 +212,7 @@ export function DashboardScreen({ navigation }) {
 }
 
 export function AlertsScreen({ navigation }) {
+  useTheme();
   const [alerts, setAlerts] = useState([]);
   const [filter, setFilter] = useState('TODOS');
   const [loading, setLoading] = useState(true);
@@ -292,6 +296,7 @@ export function AlertsScreen({ navigation }) {
 }
 
 export function AlertDetailsScreen({ route }) {
+  useTheme();
   const initialAlert = route.params?.alert;
   const alertId = route.params?.id ?? initialAlert?.idAlerta ?? initialAlert?.id;
   const [alert, setAlert] = useState(initialAlert || null);
@@ -445,6 +450,7 @@ async function abrirLocalizacaoPonto(point) {
 }
 
 export function PointsScreen({ navigation }) {
+  useTheme();
   const [points, setPoints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -516,6 +522,7 @@ export function PointsScreen({ navigation }) {
 }
 
 export function PointDetailsScreen({ route }) {
+  useTheme();
   const pointId = route.params?.id;
   const [point, setPoint] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -734,6 +741,7 @@ function obterSituacaoPonto(pointId, readings, alertsByReading, alertsAvailable)
 }
 
 export function ReadingsScreen({ navigation }) {
+  useTheme();
   const [readings, setReadings] = useState([]);
   const [points, setPoints] = useState([]);
   const [alerts, setAlerts] = useState([]);
@@ -948,6 +956,7 @@ export function ReadingsScreen({ navigation }) {
 }
 
 export function ReadingDetailsScreen({ route }) {
+  useTheme();
   const readingId = route.params?.id ?? route.params?.reading?.idLeitura;
   const initialReading = route.params?.reading || null;
   const [reading, setReading] = useState(initialReading);
@@ -1079,6 +1088,7 @@ export function ReadingDetailsScreen({ route }) {
 }
 
 export function ProfileScreen({ navigation, onLogout, user }) {
+  const { mode, setThemeMode } = useTheme();
   const isManager = String(user?.perfil || '').toUpperCase() === 'GESTOR';
 
   async function handleLogout() {
@@ -1138,6 +1148,35 @@ export function ProfileScreen({ navigation, onLogout, user }) {
         </View>
       )}
 
+      <View style={styles.appearanceSection}>
+        <Text style={styles.adminHeading}>Aparência</Text>
+        <Text style={styles.appearanceDescription}>
+          Escolha o tema que prefere utilizar no aplicativo.
+        </Text>
+        <View style={styles.themeSelector}>
+          <TouchableOpacity
+            accessibilityRole="radio"
+            accessibilityState={{ selected: mode === 'light' }}
+            style={[styles.themeOption, mode === 'light' && styles.themeOptionSelected]}
+            onPress={() => setThemeMode('light')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.themeOptionIcon}>☀️</Text>
+            <Text style={[styles.themeOptionText, mode === 'light' && styles.themeOptionTextSelected]}>Claro</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            accessibilityRole="radio"
+            accessibilityState={{ selected: mode === 'dark' }}
+            style={[styles.themeOption, mode === 'dark' && styles.themeOptionSelected]}
+            onPress={() => setThemeMode('dark')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.themeOptionIcon}>🌙</Text>
+            <Text style={[styles.themeOptionText, mode === 'dark' && styles.themeOptionTextSelected]}>Escuro</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
       <TouchableOpacity
         style={styles.secondaryButton}
         onPress={() => navigation.navigate('About')}
@@ -1153,6 +1192,7 @@ export function ProfileScreen({ navigation, onLogout, user }) {
 }
 
 export function AboutScreen() {
+  useTheme();
   return (
     <AppScreen title="Sobre o aplicativo" subtitle="Conheça o Alerta Cidadão.">
       <View style={styles.detailCard}>
@@ -1169,7 +1209,7 @@ export function AboutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles(() => ({
   banner: {
     backgroundColor: colors.primaryLight,
     borderRadius: 15,
@@ -1449,6 +1489,14 @@ const styles = StyleSheet.create({
   },
   adminSection: { marginTop: 22 },
   adminHeading: { fontSize: 17, fontWeight: 'bold', color: colors.text, marginBottom: 3 },
+  appearanceSection: { marginTop: 24, marginBottom: 8 },
+  appearanceDescription: { color: colors.textSecondary, fontSize: 12, lineHeight: 18, marginTop: 4, marginBottom: 12 },
+  themeSelector: { flexDirection: 'row', gap: 10 },
+  themeOption: { flex: 1, minHeight: 74, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', padding: 10 },
+  themeOptionSelected: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
+  themeOptionIcon: { fontSize: 21, marginBottom: 5 },
+  themeOptionText: { color: colors.textSecondary, fontWeight: '700', fontSize: 12 },
+  themeOptionTextSelected: { color: colors.primaryDark },
   logoutButton: {
     backgroundColor: colors.dangerLight,
     padding: 15,
@@ -1458,4 +1506,4 @@ const styles = StyleSheet.create({
   },
   logoutText: { color: colors.danger, fontWeight: 'bold' },
   aboutName: { fontSize: 22, color: colors.primary, fontWeight: 'bold', marginBottom: 20 },
-});
+}));
