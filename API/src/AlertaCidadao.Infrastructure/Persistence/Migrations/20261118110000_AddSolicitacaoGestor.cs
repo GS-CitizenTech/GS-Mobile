@@ -1,11 +1,8 @@
 using AlertaCidadao.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace AlertaCidadao.Infrastructure.Persistence.Migrations;
 
-[DbContext(typeof(AlertaCidadaoDbContext))]
-[Migration("20261118110000_AddSolicitacaoGestor")]
 public sealed partial class AddSolicitacaoGestor : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
