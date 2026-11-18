@@ -402,6 +402,8 @@ export function OccurrenceDetailsScreen({ navigation, route, user }) {
   const [occurrence, setOccurrence] = useState(route.params?.occurrence || null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState(route.params?.occurrence?.status || 'ABERTA');
+  const [savingStatus, setSavingStatus] = useState(false);
   const isOwner = Number(user?.idUsuario) === Number(occurrence?.idUsuario);
   const canManage = isManager || (isOwner && occurrence?.status === 'ABERTA');
 
@@ -411,6 +413,7 @@ export function OccurrenceDetailsScreen({ navigation, route, user }) {
     try {
       const data = await obterOcorrenciaPorId(id);
       setOccurrence(data);
+      setSelectedStatus(data.status || 'ABERTA');
     } catch (requestError) {
       setError(getApiErrorMessage(requestError));
     } finally {
@@ -421,6 +424,40 @@ export function OccurrenceDetailsScreen({ navigation, route, user }) {
   useFocusEffect(useCallback(() => {
     loadOccurrence();
   }, [loadOccurrence]));
+
+  async function saveStatus() {
+    if (!isManager || !occurrence) return;
+    if (selectedStatus === occurrence.status) {
+      Alert.alert('Status sem alteração', 'Selecione um status diferente antes de salvar.');
+      return;
+    }
+
+    setSavingStatus(true);
+    setError('');
+    try {
+      const updated = await atualizarOcorrencia(id, {
+        tipo: occurrence.tipo,
+        titulo: occurrence.titulo,
+        descricao: occurrence.descricao,
+        idPonto: occurrence.idPonto,
+        logradouro: occurrence.logradouro,
+        bairro: occurrence.bairro,
+        cidade: occurrence.cidade,
+        uf: occurrence.uf,
+        latitude: occurrence.latitude,
+        longitude: occurrence.longitude,
+        status: selectedStatus,
+      });
+      setOccurrence(updated);
+      setSelectedStatus(updated.status || selectedStatus);
+      Alert.alert('Status atualizado', `A ocorrência agora está: ${nomeStatus(updated.status)}.`);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError));
+      setSelectedStatus(occurrence.status || 'ABERTA');
+    } finally {
+      setSavingStatus(false);
+    }
+  }
 
   function confirmDelete() {
     Alert.alert(
@@ -479,6 +516,24 @@ export function OccurrenceDetailsScreen({ navigation, route, user }) {
         <Text style={styles.detailLabel}>Datas</Text>
         <Text style={styles.detailText}>Criada em: {formatarData(occurrence.dataCriacao)}</Text>
         <Text style={styles.detailText}>Atualizada em: {formatarData(occurrence.dataAtualizacao)}</Text>
+        {isManager ? (
+          <View style={styles.statusEditor}>
+            <Text style={styles.sectionTitle}>Atualizar status da ocorrência</Text>
+            <Text style={styles.stateMessage}>Selecione a nova situação e salve para registrar a alteração.</Text>
+            <ChoiceChips items={STATUS} value={selectedStatus} onChange={setSelectedStatus} />
+            <TouchableOpacity
+              style={[styles.primaryButton, savingStatus ? styles.disabledButton : null]}
+              onPress={saveStatus}
+              disabled={savingStatus}
+            >
+              {savingStatus ? (
+                <ActivityIndicator color={colors.textLight} />
+              ) : (
+                <Text style={styles.primaryButtonText}>Salvar novo status</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : null}
         {error ? <Text style={styles.formError}>{error}</Text> : null}
         {canManage ? (
           <>
@@ -496,7 +551,7 @@ export function OccurrenceDetailsScreen({ navigation, route, user }) {
           <Text style={styles.noticeText}>Esta ocorrência não pode mais ser editada pelo cidadão. Em caso de dúvida, entre em contato com a gestão.</Text>
         )}
         <TouchableOpacity style={styles.refreshButton} onPress={loadOccurrence}>
-          <Text style={styles.refreshButtonText}>Atualizar detalhes</Text>
+          <Text style={styles.refreshButtonText}>Recarregar dados</Text>
         </TouchableOpacity>
       </View>
     </AppScreen>
@@ -560,6 +615,7 @@ const styles = StyleSheet.create({
   ufField: { width: 76 },
   formError: { color: colors.danger, fontSize: 13, lineHeight: 18, marginTop: 14 },
   detailCard: { backgroundColor: colors.surface, borderRadius: 14, padding: 18, borderWidth: 1, borderColor: colors.border },
+  statusEditor: { marginTop: 18, paddingTop: 4 },
   detailTitle: { color: colors.text, fontSize: 20, fontWeight: '800', marginTop: 14, marginBottom: 10 },
   detailLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '800', marginTop: 16, marginBottom: 6, textTransform: 'uppercase' },
   detailText: { color: colors.text, fontSize: 14, lineHeight: 21, marginTop: 4 },
