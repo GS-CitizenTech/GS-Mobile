@@ -2,7 +2,7 @@ namespace AlertaCidadao.Application.DTOs;
 
 public sealed record OcorrenciaDto(
     long IdOcorrencia,
-    long IdUsuario,
+    long? IdUsuario,
     string NomeUsuario,
     long? IdPonto,
     string? NomePonto,

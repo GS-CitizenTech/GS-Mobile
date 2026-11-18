@@ -44,7 +44,7 @@ export function getApiErrorMessage(error) {
     }
 
     if (status === 403) {
-      return 'Você não tem permissão para realizar esta operação.';
+      return serverMessage || 'Você não tem permissão para realizar esta operação.';
     }
 
     if (status === 404) {

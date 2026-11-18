@@ -62,6 +62,24 @@ public sealed class UsuarioServiceTests
     }
 
     [Fact]
+    public async Task CriarAsync_ComEmailDeContaInativa_DeveInformarQueAContaEstaInativa()
+    {
+        _repository.Inserir(new()
+        {
+            Nome = "Conta desativada", Email = "cidadao@example.com",
+            SenhaHash = "hash", Perfil = "CIDADAO", Ativo = false
+        });
+
+        var resultado = await CriarServico().CriarAsync(RequestValido());
+
+        Assert.False(resultado.Sucesso);
+        Assert.Equal(TipoErroOperacao.Conflito, resultado.TipoErro);
+        Assert.True(resultado.Mensagem!.Contains("conta inativa", StringComparison.OrdinalIgnoreCase));
+        Assert.Single(_repository.Usuarios);
+        Assert.Equal(0, _repository.Adicoes);
+    }
+
+    [Fact]
     public async Task CriarAsync_ComPerfilGestor_DeveRejeitarEscalonamentoPublico()
     {
         var resultado = await CriarServico().CriarAsync(RequestValido(perfil: "GESTOR"));
@@ -100,17 +118,100 @@ public sealed class UsuarioServiceTests
     }
 
     [Fact]
-    public async Task ExcluirAsync_DeveDesativarUsuarioSemApagarRegistro()
+    public async Task AtualizarStatusAsync_DeveDesativarEReativarConta()
     {
-        var cadastro = await CriarServico().CriarAsync(RequestValido());
+        var service = CriarServico();
+        var cadastro = await service.CriarAsync(RequestValido());
         var id = cadastro.Dados!.IdUsuario;
 
-        var resultado = await CriarServico().ExcluirAsync(id);
+        var desativacao = await service.AtualizarStatusAsync(id, idGestor: 999, ativo: false);
+        Assert.True(desativacao.Sucesso);
+        Assert.False(_repository.Usuarios.Single().Ativo);
+
+        var reativacao = await service.AtualizarStatusAsync(id, idGestor: 999, ativo: true);
+        Assert.True(reativacao.Sucesso);
+        Assert.True(_repository.Usuarios.Single().Ativo);
+        Assert.Equal(2, _repository.Salvamentos);
+    }
+
+    [Fact]
+    public async Task AtualizarStatusAsync_NaoDeveDesativarUltimoGestorAtivo()
+    {
+        _repository.Inserir(new()
+        {
+            Nome = "Gestor único", Email = "gestor@example.com",
+            SenhaHash = "hash", Perfil = "GESTOR", Ativo = true
+        });
+        _repository.Inserir(new()
+        {
+            Nome = "Outro gestor", Email = "gestor2@example.com",
+            SenhaHash = "hash", Perfil = "GESTOR", Ativo = false
+        });
+
+        var resultado = await CriarServico().AtualizarStatusAsync(1, idGestor: 999, ativo: false);
+
+        Assert.False(resultado.Sucesso);
+        Assert.Equal(TipoErroOperacao.Conflito, resultado.TipoErro);
+        Assert.True(_repository.Usuarios[0].Ativo);
+    }
+
+    [Fact]
+    public async Task AtualizarStatusAsync_NaoDevePermitirAlterarPropriaConta()
+    {
+        var service = CriarServico();
+        var cadastro = await service.CriarAsync(RequestValido());
+        var id = cadastro.Dados!.IdUsuario;
+
+        var resultado = await service.AtualizarStatusAsync(id, idGestor: id, ativo: false);
+
+        Assert.False(resultado.Sucesso);
+        Assert.Equal(TipoErroOperacao.Conflito, resultado.TipoErro);
+        Assert.True(_repository.Usuarios.Single().Ativo);
+    }
+
+    [Fact]
+    public async Task ExcluirAsync_DeveRemoverUsuarioPermanentemente()
+    {
+        var service = CriarServico();
+        var cadastro = await service.CriarAsync(RequestValido());
+        var id = cadastro.Dados!.IdUsuario;
+
+        var resultado = await service.ExcluirAsync(id, idGestor: 999);
 
         Assert.True(resultado.Sucesso);
+        Assert.Empty(_repository.Usuarios);
+        Assert.Equal(1, _repository.Remocoes);
+    }
+
+    [Fact]
+    public async Task ExcluirAsync_NaoDeveExcluirUltimoGestorAtivo()
+    {
+        _repository.Inserir(new()
+        {
+            Nome = "Gestor único", Email = "gestor@example.com",
+            SenhaHash = "hash", Perfil = "GESTOR", Ativo = true
+        });
+
+        var resultado = await CriarServico().ExcluirAsync(1, idGestor: 999);
+
+        Assert.False(resultado.Sucesso);
+        Assert.Equal(TipoErroOperacao.Conflito, resultado.TipoErro);
         Assert.Single(_repository.Usuarios);
-        Assert.False(_repository.Usuarios[0].Ativo);
-        Assert.Equal(1, _repository.Salvamentos);
+        Assert.Equal(0, _repository.Remocoes);
+    }
+
+    [Fact]
+    public async Task ExcluirAsync_NaoDevePermitirExcluirPropriaConta()
+    {
+        var service = CriarServico();
+        var cadastro = await service.CriarAsync(RequestValido());
+        var id = cadastro.Dados!.IdUsuario;
+
+        var resultado = await service.ExcluirAsync(id, idGestor: id);
+
+        Assert.False(resultado.Sucesso);
+        Assert.Equal(TipoErroOperacao.Conflito, resultado.TipoErro);
+        Assert.Single(_repository.Usuarios);
     }
 
     [Fact]

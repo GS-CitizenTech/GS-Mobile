@@ -268,7 +268,7 @@ namespace AlertaCidadao.Infrastructure.Persistence.Migrations
                         .HasColumnType("NUMBER(20,0)")
                         .HasColumnName("ID_PONTO");
 
-                    b.Property<long>("IdUsuario")
+                    b.Property<long?>("IdUsuario")
                         .HasColumnType("NUMBER(20,0)")
                         .HasColumnName("ID_USUARIO");
 
@@ -544,7 +544,6 @@ namespace AlertaCidadao.Infrastructure.Persistence.Migrations
                         .WithMany("Ocorrencias")
                         .HasForeignKey("IdUsuario")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
                         .HasConstraintName("FK_OCORRENCIA_USUARIO");
 
                     b.Navigation("Ponto");

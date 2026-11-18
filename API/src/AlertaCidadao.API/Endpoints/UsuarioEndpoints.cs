@@ -5,6 +5,7 @@ using AlertaCidadao.Application.DTOs;
 using AlertaCidadao.Application.Interfaces;
 using AlertaCidadao.Application.Services;
 using Microsoft.AspNetCore.RateLimiting;
+using System.Security.Claims;
 
 namespace AlertaCidadao.API.Endpoints;
 
@@ -33,11 +34,22 @@ public static class UsuarioEndpoints
             var email = request.Email.Trim().ToLowerInvariant();
             var usuario = await repository.ObterPorEmailAsync(email, ct);
 
-            // A mesma resposta é usada para e-mail inexistente e senha incorreta.
-            if (usuario is null || !usuario.Ativo ||
+            // Não revela a existência da conta quando a senha estiver incorreta.
+            if (usuario is null ||
                 !passwordHasher.VerificarSenha(request.Senha, usuario.SenhaHash))
             {
                 return Results.Unauthorized();
+            }
+
+            if (!usuario.Ativo)
+            {
+                return Results.Json(
+                    new ApiErrorResponse(
+                        "CONTA_INATIVA",
+                        "Sua conta está inativa. Entre em contato com um gestor para solicitar a reativação.",
+                        null,
+                        DateTimeOffset.UtcNow),
+                    statusCode: StatusCodes.Status403Forbidden);
             }
 
             var (token, expiraEm) = tokenService.GerarToken(usuario);
@@ -58,6 +70,7 @@ public static class UsuarioEndpoints
         .Produces<LoginResponse>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized)
+        .Produces<ApiErrorResponse>(StatusCodes.Status403Forbidden)
         .Produces(StatusCodes.Status429TooManyRequests);
 
         // Cadastro público: máximo de 10 requisições por minuto por endereço IP.
@@ -103,10 +116,14 @@ public static class UsuarioEndpoints
             if (validacao is not null) return Results.BadRequest(validacao);
 
             var email = request.Email.Trim().ToLowerInvariant();
-            if (await repository.EmailExisteAsync(email, null, ct))
+            var usuarioExistente = await repository.ObterPorEmailAsync(email, ct);
+            if (usuarioExistente is not null)
             {
+                var mensagem = usuarioExistente.Ativo
+                    ? "Este e-mail já está cadastrado."
+                    : "Este e-mail pertence a uma conta inativa. Entre em contato com um gestor para solicitar a reativação.";
                 return Results.Conflict(new ApiErrorResponse(
-                    "CONFLITO", "Este e-mail já está cadastrado.", null, DateTimeOffset.UtcNow));
+                    "CONFLITO", mensagem, null, DateTimeOffset.UtcNow));
             }
 
             var gestor = new AlertaCidadao.Domain.Entities.Usuario
@@ -192,24 +209,52 @@ public static class UsuarioEndpoints
         .Produces<ApiErrorResponse>(StatusCodes.Status404NotFound)
         .Produces<ApiErrorResponse>(StatusCodes.Status409Conflict);
 
-        // Desativação: acesso exclusivo ao perfil GESTOR.
+        // Ativação/desativação: operação separada da edição cadastral.
+        grupo.MapPatch("/{id:long}/status", async Task<IResult> (
+            long id,
+            AtualizarStatusUsuarioRequest request,
+            IUsuarioService service,
+            ClaimsPrincipal principal,
+            CancellationToken ct) =>
+        {
+            if (!long.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var idGestor))
+                return Results.Unauthorized();
+
+            var resultado = await service.AtualizarStatusAsync(id, idGestor, request.Ativo, ct);
+            return resultado.Sucesso
+                ? Results.Ok(resultado.Dados)
+                : resultado.ToErrorResult();
+        })
+        .WithName("AtualizarStatusUsuario")
+        .WithSummary("Ativa ou desativa uma conta de usuário.")
+        .RequireAuthorization("Gestor")
+        .Produces<UsuarioDto>(StatusCodes.Status200OK)
+        .Produces<ApiErrorResponse>(StatusCodes.Status400BadRequest)
+        .Produces<ApiErrorResponse>(StatusCodes.Status404NotFound)
+        .Produces<ApiErrorResponse>(StatusCodes.Status409Conflict);
+
+        // Exclusão física: remove a conta e dados administrativos associados.
         grupo.MapDelete("/{id:long}", async Task<IResult> (
             long id,
             IUsuarioService service,
+            ClaimsPrincipal principal,
             CancellationToken ct) =>
         {
-            var resultado = await service.ExcluirAsync(id, ct);
+            if (!long.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var idGestor))
+                return Results.Unauthorized();
 
+            var resultado = await service.ExcluirAsync(id, idGestor, ct);
             return resultado.Sucesso
                 ? Results.NoContent()
                 : resultado.ToErrorResult();
         })
-        .AddEndpointFilter<IdempotencyEndpointFilter>()
-        .WithName("DesativarUsuario")
-        .WithSummary("Desativa um usuário.")
+        .WithName("ExcluirUsuarioPermanentemente")
+        .WithSummary("Exclui permanentemente uma conta de usuário.")
+        .WithDescription("Remove o acesso e solicitações de gestão associadas; ocorrências são preservadas sem vínculo com a conta excluída.")
         .RequireAuthorization("Gestor")
         .Produces(StatusCodes.Status204NoContent)
         .Produces<ApiErrorResponse>(StatusCodes.Status400BadRequest)
-        .Produces<ApiErrorResponse>(StatusCodes.Status404NotFound);
+        .Produces<ApiErrorResponse>(StatusCodes.Status404NotFound)
+        .Produces<ApiErrorResponse>(StatusCodes.Status409Conflict);
     }
 }

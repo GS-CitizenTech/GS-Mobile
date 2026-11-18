@@ -200,7 +200,7 @@ public sealed class OcorrenciaService(
     private static OcorrenciaDto Mapear(Ocorrencia x) => new(
         x.IdOcorrencia,
         x.IdUsuario,
-        x.Usuario?.Nome ?? string.Empty,
+        x.Usuario?.Nome ?? "Conta excluída",
         x.IdPonto,
         x.Ponto?.Nome,
         x.Tipo,

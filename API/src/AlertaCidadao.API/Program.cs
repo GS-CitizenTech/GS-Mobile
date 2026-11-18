@@ -4,6 +4,8 @@ using AlertaCidadao.API.Endpoints;
 using AlertaCidadao.API.Extensions;
 using AlertaCidadao.API.HealthChecks;
 using AlertaCidadao.Application.Services;
+using AlertaCidadao.Application.Interfaces;
+using System.Security.Claims;
 using AlertaCidadao.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -12,6 +14,7 @@ using Microsoft.OpenApi.Models;
 using AlertaCidadao.API.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,7 +65,35 @@ builder.Services
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromSeconds(30),
             NameClaimType = System.Security.Claims.ClaimTypes.NameIdentifier,
-            RoleClaimType = System.Security.Claims.ClaimTypes.Role
+            RoleClaimType = ClaimTypes.Role
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var idClaim = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!long.TryParse(idClaim, out var idUsuario))
+                {
+                    context.Fail("Token sem identificador de usuário válido.");
+                    return;
+                }
+
+                var repository = context.HttpContext.RequestServices
+                    .GetRequiredService<IUsuarioRepository>();
+                var usuario = await repository.ObterPorIdAsync(
+                    idUsuario, context.HttpContext.RequestAborted);
+
+                if (usuario is null || !usuario.Ativo)
+                {
+                    context.Fail("A conta vinculada a este token está inativa ou foi excluída.");
+                    return;
+                }
+
+                var perfilToken = context.Principal?.FindFirstValue(ClaimTypes.Role);
+                if (!string.Equals(perfilToken, usuario.Perfil, StringComparison.OrdinalIgnoreCase))
+                    context.Fail("O perfil da conta foi alterado. Entre novamente.");
+            }
         };
     });
 

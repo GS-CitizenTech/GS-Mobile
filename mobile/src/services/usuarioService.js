@@ -25,7 +25,23 @@ export async function listUsers({ incluirInativos = true } = {}) {
   return response.data.map(normalizeUser);
 }
 
+export async function updateUserStatus(idUsuario, ativo) {
+  const response = await api.patch(
+    `${API_ENDPOINTS.usuarios}/${idUsuario}/status`,
+    { ativo },
+  );
+  return normalizeUser(response.data);
+}
+
 export async function deactivateUser(idUsuario) {
+  return updateUserStatus(idUsuario, false);
+}
+
+export async function activateUser(idUsuario) {
+  return updateUserStatus(idUsuario, true);
+}
+
+export async function deleteUserPermanently(idUsuario) {
   await api.delete(`${API_ENDPOINTS.usuarios}/${idUsuario}`);
 }
 

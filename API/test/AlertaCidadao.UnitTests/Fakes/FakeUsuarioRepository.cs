@@ -11,6 +11,7 @@ internal sealed class FakeUsuarioRepository : IUsuarioRepository
     public IReadOnlyList<Usuario> Usuarios => _usuarios;
     public int Adicoes { get; private set; }
     public int Salvamentos { get; private set; }
+    public int Remocoes { get; private set; }
 
     public Task<IReadOnlyList<Usuario>> ListarAsync(bool incluirInativos, CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<Usuario>>(
@@ -45,6 +46,7 @@ internal sealed class FakeUsuarioRepository : IUsuarioRepository
     public Task RemoverAsync(Usuario entidade, CancellationToken ct = default)
     {
         _usuarios.Remove(entidade);
+        Remocoes++;
         return Task.CompletedTask;
     }
 

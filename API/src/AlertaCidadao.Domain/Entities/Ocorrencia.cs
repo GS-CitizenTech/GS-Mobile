@@ -4,7 +4,7 @@ public class Ocorrencia
 {
     public long IdOcorrencia { get; set; }
 
-    public long IdUsuario { get; set; }
+    public long? IdUsuario { get; set; }
 
     public long? IdPonto { get; set; }
 
@@ -32,7 +32,7 @@ public class Ocorrencia
 
     public DateTimeOffset? DataAtualizacao { get; set; }
 
-    public Usuario Usuario { get; set; } = null!;
+    public Usuario? Usuario { get; set; }
 
     public PontoMonitoramento? Ponto { get; set; }
 }
