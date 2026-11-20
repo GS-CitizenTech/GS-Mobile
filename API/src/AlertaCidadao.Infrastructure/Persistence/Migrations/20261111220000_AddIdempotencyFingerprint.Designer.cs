@@ -368,15 +368,19 @@ namespace AlertaCidadao.Infrastructure.Persistence.Migrations
                     b.Navigation("Ponto");
                 });
 
+
+
             modelBuilder.Entity("AlertaCidadao.Domain.Entities.LeituraEnchente", b =>
                 {
                     b.Navigation("Alerta");
                 });
 
+
             modelBuilder.Entity("AlertaCidadao.Domain.Entities.PontoMonitoramento", b =>
                 {
                     b.Navigation("Leituras");
                 });
+
 #pragma warning restore 612, 618
         }
     }

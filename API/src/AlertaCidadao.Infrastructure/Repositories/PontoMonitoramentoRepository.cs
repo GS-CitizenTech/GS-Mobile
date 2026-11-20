@@ -20,10 +20,9 @@ public sealed class PontoMonitoramentoRepository
         ListarAtivosAsync(
             CancellationToken cancellationToken = default)
     {
-        // Oracle NUMBER(1) é convertido para bool no modelo.
-        // O provider Oracle pode gerar InvalidCastException ao traduzir
-        // o predicado bool para SQL. Por isso, materializamos primeiro
-        // e aplicamos o filtro em memória.
+        // A coluna Oracle NUMBER(1) é mapeada diretamente para bool.
+        // Mantemos o filtro em memória para preservar a estratégia de
+        // leitura já utilizada neste repositório.
         var pontos = await _context.PontosMonitoramento
             .AsNoTracking()
             .OrderBy(p => p.Nome)

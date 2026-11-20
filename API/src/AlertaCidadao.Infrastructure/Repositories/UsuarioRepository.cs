@@ -19,8 +19,9 @@ public sealed class UsuarioRepository(AlertaCidadaoDbContext context)
             .ThenBy(x => x.IdUsuario)
             .ToListAsync(ct);
 
-        // Aplicar o filtro bool em memória evita a falha de tradução
-        // bool/int do provider Oracle para a coluna ATIVO (NUMBER(1)).
+        // A propriedade Ativo é mapeada como bool nativo do EF Core para
+        // NUMBER(1). O filtro em memória preserva a estratégia já validada
+        // para leitura de usuários no provider Oracle.
         return incluirInativos
             ? usuarios
             : usuarios.Where(x => x.Ativo).ToList();

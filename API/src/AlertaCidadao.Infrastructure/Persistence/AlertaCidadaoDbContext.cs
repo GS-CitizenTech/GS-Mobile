@@ -87,7 +87,6 @@ public class AlertaCidadaoDbContext : DbContext
             entity.Property(x => x.Ativo)
                 .HasColumnName("ATIVO")
                 .HasColumnType("NUMBER(1)")
-                .HasConversion<int>()
                 .HasDefaultValue(true);
 
             entity.Property(x => x.DataCadastro)
@@ -157,7 +156,6 @@ public class AlertaCidadaoDbContext : DbContext
             entity.Property(x => x.Ativo)
                 .HasColumnName("ATIVO")
                 .HasColumnType("NUMBER(1)")
-                .HasConversion<int>()
                 .HasDefaultValue(true);
 
             entity.Property(x => x.DataCadastro)

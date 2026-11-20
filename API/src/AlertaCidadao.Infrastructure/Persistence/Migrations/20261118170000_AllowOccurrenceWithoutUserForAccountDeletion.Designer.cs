@@ -461,16 +461,7 @@ public sealed partial class AllowOccurrenceWithoutUserForAccountDeletion
                     b.Navigation("Ponto");
                 });
 
-            modelBuilder.Entity("AlertaCidadao.Domain.Entities.LeituraEnchente", b =>
-                {
-                    b.Navigation("Alerta");
-                });
 
-            modelBuilder.Entity("AlertaCidadao.Domain.Entities.PontoMonitoramento", b =>
-                {
-                    b.Navigation("Leituras");
-                    b.Navigation("Ocorrencias");
-                });
 
             modelBuilder.Entity("AlertaCidadao.Domain.Entities.SolicitacaoGestor", b =>
                 {
@@ -530,10 +521,6 @@ public sealed partial class AllowOccurrenceWithoutUserForAccountDeletion
                     b.ToTable("SOLICITACAO_GESTOR", (string)null);
                 });
 
-            modelBuilder.Entity("AlertaCidadao.Domain.Entities.Usuario", b =>
-                {
-                    b.Navigation("Ocorrencias");
-                });
 
             modelBuilder.Entity("AlertaCidadao.Domain.Entities.Ocorrencia", b =>
                 {
@@ -567,6 +554,25 @@ public sealed partial class AllowOccurrenceWithoutUserForAccountDeletion
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("FK_SOL_GESTOR_USUARIO");
+                });
+
+
+            modelBuilder.Entity("AlertaCidadao.Domain.Entities.LeituraEnchente", b =>
+                {
+                    b.Navigation("Alerta");
+                });
+
+
+            modelBuilder.Entity("AlertaCidadao.Domain.Entities.PontoMonitoramento", b =>
+                {
+                    b.Navigation("Leituras");
+                    b.Navigation("Ocorrencias");
+                });
+
+
+            modelBuilder.Entity("AlertaCidadao.Domain.Entities.Usuario", b =>
+                {
+                    b.Navigation("Ocorrencias");
                 });
 
 #pragma warning restore 612, 618

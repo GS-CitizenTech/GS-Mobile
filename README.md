@@ -2,6 +2,10 @@
 
 Aplicativo móvel e API para apoiar o monitoramento de enchentes, a divulgação de alertas e o registro e acompanhamento de ocorrências. A solução reúne informações de pontos de monitoramento, leituras de níveis de água e chuva, cidadãos e gestores em uma aplicação integrada.
 
+## Youtube
+
+Link: https://www.youtube.com/watch?v=o7qbDKyW3d4
+
 ## Estrutura do repositório
 
 ```text
